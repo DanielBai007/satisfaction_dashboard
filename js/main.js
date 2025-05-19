@@ -253,6 +253,14 @@ async function handleFileUpload() {
         loadingElement.classList.remove('hidden');
         uploadBtn.disabled = true;
 
+        // 检查必要的库是否已加载
+        if (typeof XLSX === 'undefined') {
+            throw new Error('XLSX库未加载，请刷新页面重试');
+        }
+        if (typeof Papa === 'undefined') {
+            throw new Error('PapaParse库未加载，请刷新页面重试');
+        }
+
         const data = await parseFile(file);
         if (!data || data.length === 0) {
             throw new Error('未能读取到数据或数据格式不正确');
