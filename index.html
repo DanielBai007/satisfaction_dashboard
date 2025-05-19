@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学生满意度评价数据分析看板</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>学生满意度评价数据分析看板</h1>
+        </header>
+        
+        <section id="upload-section" class="upload-section">
+            <div class="section-header">
+                <h2>上传数据</h2>
+                <button id="minimize-btn" class="icon-btn hidden"><i class="bi bi-chevron-up"></i></button>
+            </div>
+            <div id="upload-content" class="upload-content">
+                <div class="file-upload-wrapper">
+                    <div class="file-upload-area">
+                        <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                        <div class="upload-text">
+                            <p>拖拽文件到此处或点击选择文件</p>
+                            <p class="upload-hint">支持 .xlsx, .xls, .csv 格式</p>
+                        </div>
+                        <input type="file" id="file-upload" accept=".xlsx,.xls,.csv">
+                    </div>
+                    <div id="file-info" class="file-info hidden">
+                        <div class="file-name-container">
+                            <i class="bi bi-file-earmark-spreadsheet file-icon"></i>
+                            <span id="selected-filename">未选择文件</span>
+                        </div>
+                        <button id="change-file-btn" class="secondary-btn">更换文件</button>
+                    </div>
+                </div>
+                <button id="upload-btn" class="primary-btn">分析数据</button>
+            </div>
+            
+            <div id="upload-collapsed" class="upload-collapsed hidden">
+                <div class="selected-file-info">
+                    <i class="bi bi-file-earmark-spreadsheet file-icon"></i>
+                    <span id="collapsed-filename">未选择文件</span>
+                </div>
+                <button id="expand-btn" class="secondary-btn">更换数据</button>
+            </div>
+        </section>
+
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>数据处理中，请稍候...</p>
+        </div>
+        
+        <div id="floating-btn" class="floating-btn hidden">
+            <button id="reupload-btn" title="重新上传数据">
+                <i class="bi bi-arrow-up-circle-fill"></i>
+            </button>
+        </div>
+        
+        <section id="dashboard" class="dashboard hidden">
+            <h2>数据看板</h2>
+            
+            <div class="dashboard-container">
+                <div class="dashboard-card">
+                    <h3>基本统计</h3>
+                    <div id="basic-stats" class="stat-grid"></div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3>评分分布</h3>
+                    <div id="score-chart" class="chart"></div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3>标签分析</h3>
+                    <div id="label-chart" class="chart"></div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3>设备分布</h3>
+                    <div id="device-chart" class="chart"></div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3>版本分布</h3>
+                    <div id="version-chart" class="chart"></div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h3>评分趋势</h3>
+                    <div id="time-chart" class="chart"></div>
+                </div>
+            </div>
+        </section>
+        
+        <section id="comments-section" class="comments-section hidden">
+            <h2>学生评价内容</h2>
+            <div class="comments-container">
+                <div class="comments-controls">
+                    <div class="filter-item">
+                        <label for="comments-score-filter">评分筛选:</label>
+                        <select id="comments-score-filter">
+                            <option value="all">全部</option>
+                            <option value="5">5分</option>
+                            <option value="4">4分</option>
+                            <option value="3">3分</option>
+                            <option value="2">2分</option>
+                            <option value="1">1分</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="comments-label-filter">标签筛选:</label>
+                        <select id="comments-label-filter">
+                            <option value="all">全部标签</option>
+                        </select>
+                    </div>
+                    <button id="comments-filter-btn">筛选</button>
+                </div>
+                
+                <div id="comments-list" class="comments-list">
+                    <!-- 评价内容将在这里动态生成 -->
+                </div>
+                
+                <div class="pagination">
+                    <button id="comments-prev-page">上一页</button>
+                    <span id="comments-page-info">第 1 页 / 共 1 页</span>
+                    <button id="comments-next-page">下一页</button>
+                </div>
+            </div>
+        </section>
+        
+        <section id="detailed-data" class="detailed-data hidden">
+            <h2>详细数据</h2>
+            <div class="filter-container">
+                <div class="filter-item">
+                    <label for="score-filter">评分筛选:</label>
+                    <select id="score-filter">
+                        <option value="all">全部</option>
+                        <option value="5">5分</option>
+                        <option value="4">4分</option>
+                        <option value="3">3分</option>
+                        <option value="2">2分</option>
+                        <option value="1">1分</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label for="label-filter">标签筛选:</label>
+                    <select id="label-filter">
+                        <option value="all">全部标签</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label for="content-filter">有内容:</label>
+                    <input type="checkbox" id="content-filter">
+                </div>
+                <button id="filter-btn">筛选</button>
+            </div>
+            
+            <div class="table-container">
+                <table id="data-table">
+                    <thead>
+                        <tr>
+                            <th>评价ID</th>
+                            <th>场次ID</th>
+                            <th>学生ID</th>
+                            <th>评分</th>
+                            <th>标签</th>
+                            <th>内容</th>
+                            <th>APP版本</th>
+                            <th>设备</th>
+                            <th>时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+                <div class="pagination">
+                    <button id="prev-page">上一页</button>
+                    <span id="page-info">第 1 页 / 共 1 页</span>
+                    <button id="next-page">下一页</button>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <script src="js/main.js"></script>
+</body>
+</html> 
