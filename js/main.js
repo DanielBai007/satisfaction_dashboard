@@ -4,6 +4,10 @@ let filteredData = []; // 筛选后的数据
 let uniqueLabels = []; // 所有唯一标签
 let currentPage = 1;
 const rowsPerPage = 10;
+let teacherData = []; // 主讲老师数据
+let teacherMapping = {}; // 场次ID到主讲老师的映射
+let teacherStatsData = {}; // 主讲老师统计数据
+let teacherAverageStats = {}; // 主讲老师平均值统计
 
 // 评分和标签的映射关系
 const scoreLabelsMap = {
@@ -59,11 +63,13 @@ const deviceBrandMap = [
 
 // DOM 元素
 const fileUpload = document.getElementById('file-upload');
+const teacherFileUpload = document.getElementById('teacher-file-upload');
 const uploadBtn = document.getElementById('upload-btn');
 const loadingElement = document.getElementById('loading');
 const dashboardElement = document.getElementById('dashboard');
 const detailedDataElement = document.getElementById('detailed-data');
 const commentsSection = document.getElementById('comments-section');
+const teacherAnalysisElement = document.getElementById('teacher-analysis');
 const labelFilterElement = document.getElementById('label-filter');
 const scoreFilterElement = document.getElementById('score-filter');
 const contentFilterElement = document.getElementById('content-filter');
@@ -87,6 +93,13 @@ const collapsedFilename = document.getElementById('collapsed-filename');
 const changeFileBtn = document.getElementById('change-file-btn');
 const fileUploadArea = document.querySelector('.file-upload-area');
 
+// 主讲老师文件相关DOM元素
+const teacherFileInfo = document.getElementById('teacher-file-info');
+const teacherSelectedFilename = document.getElementById('teacher-selected-filename');
+const collapsedTeacherFilename = document.getElementById('collapsed-teacher-filename');
+const teacherChangeFileBtn = document.getElementById('teacher-change-file-btn');
+const teacherFileUploadArea = document.querySelector('.teacher-upload-area');
+
 // 评价内容区域DOM元素
 const commentsListElement = document.getElementById('comments-list');
 const commentsScoreFilterElement = document.getElementById('comments-score-filter');
@@ -95,6 +108,12 @@ const commentsFilterBtn = document.getElementById('comments-filter-btn');
 const commentsPrevPageBtn = document.getElementById('comments-prev-page');
 const commentsNextPageBtn = document.getElementById('comments-next-page');
 const commentsPageInfoElement = document.getElementById('comments-page-info');
+
+// 主讲老师分析控件DOM元素
+const teacherNameFilter = document.getElementById('teacher-name-filter');
+const teacherSortField = document.getElementById('teacher-sort-field');
+const teacherSortOrder = document.getElementById('teacher-sort-order');
+const teacherApplyFilter = document.getElementById('teacher-apply-filter');
 
 // 评价内容分页
 let commentsCurrentPage = 1;
@@ -115,87 +134,140 @@ document.addEventListener('DOMContentLoaded', () => {
 // 初始化事件监听器
 function initEventListeners() {
     // 文件上传相关
-    uploadBtn.addEventListener('click', handleFileUpload);
-    fileUpload.addEventListener('change', handleFileChange);
+    if (uploadBtn) uploadBtn.addEventListener('click', handleFileUpload);
+    if (fileUpload) fileUpload.addEventListener('change', handleFileChange);
+    if (teacherFileUpload) teacherFileUpload.addEventListener('change', handleTeacherFileChange);
     
     // 文件拖拽功能
-    fileUploadArea.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.add('file-dragover');
-    });
+    if (fileUploadArea) {
+        fileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.add('file-dragover');
+        });
+        
+        fileUploadArea.addEventListener('dragleave', () => {
+            fileUploadArea.classList.remove('file-dragover');
+        });
+        
+        fileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileUploadArea.classList.remove('file-dragover');
+            if (e.dataTransfer.files.length) {
+                fileUpload.files = e.dataTransfer.files;
+                handleFileChange();
+            }
+        });
+    }
     
-    fileUploadArea.addEventListener('dragleave', () => {
-        fileUploadArea.classList.remove('file-dragover');
-    });
-    
-    fileUploadArea.addEventListener('drop', (e) => {
-        e.preventDefault();
-        fileUploadArea.classList.remove('file-dragover');
-        if (e.dataTransfer.files.length) {
-            fileUpload.files = e.dataTransfer.files;
-            handleFileChange();
-        }
-    });
+    // 主讲老师文件拖拽功能
+    if (teacherFileUploadArea) {
+        teacherFileUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            teacherFileUploadArea.classList.add('file-dragover');
+        });
+        
+        teacherFileUploadArea.addEventListener('dragleave', () => {
+            teacherFileUploadArea.classList.remove('file-dragover');
+        });
+        
+        teacherFileUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            teacherFileUploadArea.classList.remove('file-dragover');
+            if (e.dataTransfer.files.length) {
+                teacherFileUpload.files = e.dataTransfer.files;
+                handleTeacherFileChange();
+            }
+        });
+    }
     
     // 更换文件按钮
-    changeFileBtn.addEventListener('click', () => {
-        fileUpload.click();
-    });
+    if (changeFileBtn) {
+        changeFileBtn.addEventListener('click', () => {
+            fileUpload.click();
+        });
+    }
+    
+    if (teacherChangeFileBtn) {
+        teacherChangeFileBtn.addEventListener('click', () => {
+            teacherFileUpload.click();
+        });
+    }
     
     // 上传区域收起/展开
-    minimizeBtn.addEventListener('click', collapseUploadSection);
-    expandBtn.addEventListener('click', expandUploadSection);
-    reuploadBtn.addEventListener('click', expandUploadSection);
+    if (minimizeBtn) minimizeBtn.addEventListener('click', collapseUploadSection);
+    if (expandBtn) expandBtn.addEventListener('click', expandUploadSection);
+    if (reuploadBtn) reuploadBtn.addEventListener('click', expandUploadSection);
     
     // 详细数据筛选
-    filterBtn.addEventListener('click', () => {
-        applyFilters();
-        currentPage = 1;
-        displayDetailedData();
-    });
-    prevPageBtn.addEventListener('click', () => {
-        if (currentPage > 1) {
-            currentPage--;
+    if (filterBtn) {
+        filterBtn.addEventListener('click', () => {
+            applyFilters();
+            currentPage = 1;
             displayDetailedData();
-        }
-    });
-    nextPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredData.length / rowsPerPage);
-        if (currentPage < totalPages) {
-            currentPage++;
-            displayDetailedData();
-        }
-    });
+        });
+    }
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                displayDetailedData();
+            }
+        });
+    }
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayDetailedData();
+            }
+        });
+    }
     
     // 评分和标签联动 - 详细数据
-    scoreFilterElement.addEventListener('change', () => {
-        updateLabelFilterByScore(scoreFilterElement.value, labelFilterElement);
-    });
+    if (scoreFilterElement) {
+        scoreFilterElement.addEventListener('change', () => {
+            updateLabelFilterByScore(scoreFilterElement.value, labelFilterElement);
+        });
+    }
     
     // 评价内容筛选
-    commentsFilterBtn.addEventListener('click', () => {
-        applyCommentsFilters();
-        commentsCurrentPage = 1;
-        displayComments();
-    });
-    commentsPrevPageBtn.addEventListener('click', () => {
-        if (commentsCurrentPage > 1) {
-            commentsCurrentPage--;
+    if (commentsFilterBtn) {
+        commentsFilterBtn.addEventListener('click', () => {
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
             displayComments();
-        }
-    });
-    commentsNextPageBtn.addEventListener('click', () => {
-        const totalPages = Math.ceil(filteredComments.length / rowsPerPage);
-        if (commentsCurrentPage < totalPages) {
-            commentsCurrentPage++;
-            displayComments();
-        }
-    });
+        });
+    }
+    if (commentsPrevPageBtn) {
+        commentsPrevPageBtn.addEventListener('click', () => {
+            if (commentsCurrentPage > 1) {
+                commentsCurrentPage--;
+                displayComments();
+            }
+        });
+    }
+    if (commentsNextPageBtn) {
+        commentsNextPageBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredComments.length / rowsPerPage);
+            if (commentsCurrentPage < totalPages) {
+                commentsCurrentPage++;
+                displayComments();
+            }
+        });
+    }
     
     // 评分和标签联动 - 评价内容
-    commentsScoreFilterElement.addEventListener('change', () => {
-        updateLabelFilterByScore(commentsScoreFilterElement.value, commentsLabelFilterElement);
-    });
+    if (commentsScoreFilterElement) {
+        commentsScoreFilterElement.addEventListener('change', () => {
+            updateLabelFilterByScore(commentsScoreFilterElement.value, commentsLabelFilterElement);
+        });
+    }
+    
+    // 主讲老师分析控件
+    if (teacherApplyFilter) {
+        teacherApplyFilter.addEventListener('click', applyTeacherFilters);
+    }
 }
 
 // 处理文件选择变化
@@ -212,7 +284,34 @@ function handleFileChange() {
         const uploadIcon = fileUploadArea.querySelector('.upload-icon');
         if (uploadText) uploadText.style.display = 'none';
         if (uploadIcon) uploadIcon.style.display = 'none';
+        
+        updateUploadButtonState();
     }
+}
+
+// 处理主讲老师文件选择变化
+function handleTeacherFileChange() {
+    const file = teacherFileUpload.files[0];
+    if (file) {
+        // 显示文件信息
+        teacherFileInfo.classList.remove('hidden');
+        teacherSelectedFilename.textContent = file.name;
+        
+        // 隐藏上传区文字提示
+        teacherFileUploadArea.style.padding = '15px';
+        const uploadText = teacherFileUploadArea.querySelector('.upload-text');
+        const uploadIcon = teacherFileUploadArea.querySelector('.upload-icon');
+        if (uploadText) uploadText.style.display = 'none';
+        if (uploadIcon) uploadIcon.style.display = 'none';
+        
+        updateUploadButtonState();
+    }
+}
+
+// 更新上传按钮状态
+function updateUploadButtonState() {
+    const hasEvaluationFile = fileUpload.files.length > 0;
+    uploadBtn.disabled = !hasEvaluationFile;
 }
 
 // 收起上传区域
@@ -223,8 +322,14 @@ function collapseUploadSection() {
     
     // 更新收起状态的文件名
     const file = fileUpload.files[0];
+    const teacherFile = teacherFileUpload.files[0];
     if (file) {
         collapsedFilename.textContent = file.name;
+    }
+    if (teacherFile) {
+        collapsedTeacherFilename.textContent = teacherFile.name;
+    } else {
+        collapsedTeacherFilename.textContent = '未选择主讲老师文件';
     }
 }
 
@@ -245,7 +350,7 @@ function expandUploadSection() {
 async function handleFileUpload() {
     const file = fileUpload.files[0];
     if (!file) {
-        alert('请先选择文件');
+        alert('请先选择评价数据文件');
         return;
     }
 
@@ -261,21 +366,49 @@ async function handleFileUpload() {
             throw new Error('PapaParse库未加载，请刷新页面重试');
         }
 
+        // 解析评价数据
         const data = await parseFile(file);
         if (!data || data.length === 0) {
-            throw new Error('未能读取到数据或数据格式不正确');
+            throw new Error('未能读取到评价数据或数据格式不正确');
         }
 
         allData = data;
+        
+        // 处理主讲老师数据（如果有）
+        const teacherFile = teacherFileUpload.files[0];
+        if (teacherFile) {
+            try {
+                teacherData = await parseFile(teacherFile);
+                teacherMapping = buildTeacherMapping(teacherData);
+                console.log('主讲老师数据加载成功:', teacherMapping);
+            } catch (error) {
+                console.warn('主讲老师数据处理失败:', error.message);
+                teacherData = [];
+                teacherMapping = {};
+            }
+        } else {
+            teacherData = [];
+            teacherMapping = {};
+        }
         
         // 先显示容器，再处理数据
         dashboardElement.classList.remove('hidden');
         commentsSection.classList.remove('hidden');
         detailedDataElement.classList.remove('hidden');
         
+        // 如果有主讲老师数据，显示主讲老师分析模块
+        if (Object.keys(teacherMapping).length > 0) {
+            teacherAnalysisElement.classList.remove('hidden');
+        }
+        
         // 等待DOM更新完成后处理数据
         setTimeout(() => {
             processData(data);
+            
+            // 如果有主讲老师数据，生成主讲老师分析
+            if (Object.keys(teacherMapping).length > 0) {
+                generateTeacherAnalysis(data);
+            }
             
             // 初始筛选
             filteredData = [...allData];
@@ -315,6 +448,53 @@ async function parseFile(file) {
                 const fileExtension = file.name.split('.').pop().toLowerCase();
                 
                 if (fileExtension === 'csv') {
+                    // 检测是否为乱码，如果是则尝试重新读取
+                    if (fileData.includes('����') || fileData.includes('��')) {
+                        console.log('检测到可能的编码问题，尝试重新以GBK编码读取...');
+                        // 重新以GBK编码读取
+                        const gbkReader = new FileReader();
+                        gbkReader.onload = (gbkEvent) => {
+                            try {
+                                const gbkData = gbkEvent.target.result;
+                                Papa.parse(gbkData, {
+                                    header: true,
+                                    complete: results => {
+                                        const data = results.data.filter(row => Object.keys(row).length > 1);
+                                        if (data.length > 0) {
+                                            console.log('GBK CSV数据字段:', Object.keys(data[0]));
+                                            console.log('GBK CSV样本数据:', data[0]);
+                                        }
+                                        resolve(data);
+                                    },
+                                    error: error => {
+                                        console.warn('GBK解析失败，使用原始数据:', error);
+                                        // 如果GBK也失败，使用原始数据
+                                        Papa.parse(fileData, {
+                                            header: true,
+                                            complete: results => {
+                                                const data = results.data.filter(row => Object.keys(row).length > 1);
+                                                resolve(data);
+                                            },
+                                            error: error => reject(error)
+                                        });
+                                    }
+                                });
+                            } catch (error) {
+                                console.warn('GBK读取失败，使用原始数据:', error);
+                                Papa.parse(fileData, {
+                                    header: true,
+                                    complete: results => {
+                                        const data = results.data.filter(row => Object.keys(row).length > 1);
+                                        resolve(data);
+                                    },
+                                    error: error => reject(error)
+                                });
+                            }
+                        };
+                        gbkReader.readAsText(file, 'GBK');
+                        return;
+                    }
+                    
                     Papa.parse(fileData, {
                         header: true,
                         complete: results => {
@@ -1403,4 +1583,444 @@ function getDeviceBrand(deviceModel) {
     
     // 如果没有匹配到任何规则，返回原始型号
     return '其他';
+}
+
+// 构建主讲老师映射关系
+function buildTeacherMapping(teacherData) {
+    const mapping = {};
+    
+    if (!teacherData || teacherData.length === 0) {
+        return mapping;
+    }
+    
+    // 打印主讲老师数据结构
+    console.log('主讲老师数据字段:', Object.keys(teacherData[0]));
+    console.log('主讲老师数据示例:', teacherData[0]);
+    
+    // 尝试识别场次ID和主讲老师字段
+    const firstRow = teacherData[0];
+    const fields = Object.keys(firstRow);
+    
+    // 查找场次ID字段 - 扩展支持更多可能的字段名
+    let sessionIdField = null;
+    const sessionIdCandidates = [
+        '场次ID', '场次id', '场次Id', 'sessionId', 'session_id', 'session_Id',
+        'plan_id', 'planId', 'plan_Id', 'classId', 'class_id', 'class_Id',
+        'courseId', 'course_id', 'course_Id', 'ID', 'id', 'Id',
+        '课程ID', '课程id', '课程Id', '班级ID', '班级id', '班级Id'
+    ];
+    
+    for (const candidate of sessionIdCandidates) {
+        if (fields.includes(candidate)) {
+            sessionIdField = candidate;
+            console.log(`找到场次ID字段: ${candidate}`);
+            break;
+        }
+    }
+    
+    // 查找主讲老师字段 - 扩展支持更多可能的字段名
+    let teacherField = null;
+    const teacherCandidates = [
+        '主讲老师', '主讲', '老师', '讲师', '主讲姓名', '教师', '授课老师',
+        'teacher', 'Teacher', 'instructor', 'Instructor', 'lecturer', 'Lecturer',
+        '主讲教师', '任课老师', '任课教师', '课程老师', '课程教师'
+    ];
+    
+    for (const candidate of teacherCandidates) {
+        if (fields.includes(candidate)) {
+            teacherField = candidate;
+            console.log(`找到主讲老师字段: ${candidate}`);
+            break;
+        }
+    }
+    
+    // 如果没有找到精确匹配，尝试模糊匹配
+    if (!sessionIdField) {
+        for (const field of fields) {
+            if (field.toLowerCase().includes('id') || field.includes('ID') || 
+                field.includes('场次') || field.includes('课程') || field.includes('班级')) {
+                sessionIdField = field;
+                console.log(`模糊匹配到场次ID字段: ${field}`);
+                break;
+            }
+        }
+    }
+    
+    if (!teacherField) {
+        for (const field of fields) {
+            if (field.includes('老师') || field.includes('教师') || field.includes('讲师') ||
+                field.toLowerCase().includes('teacher') || field.toLowerCase().includes('instructor')) {
+                teacherField = field;
+                console.log(`模糊匹配到主讲老师字段: ${field}`);
+                break;
+            }
+        }
+    }
+    
+    if (!sessionIdField || !teacherField) {
+        console.warn('未找到合适的场次ID或主讲老师字段');
+        console.log('可用字段:', fields);
+        console.log('请确保CSV文件包含场次ID和主讲老师信息的列');
+        return mapping;
+    }
+    
+    console.log(`使用字段 - 场次ID: ${sessionIdField}, 主讲老师: ${teacherField}`);
+    
+    // 构建映射关系
+    let mappingCount = 0;
+    teacherData.forEach((row, index) => {
+        const sessionId = row[sessionIdField];
+        const teacherInfo = row[teacherField];
+        
+        if (sessionId && teacherInfo) {
+            // 清理场次ID（去除可能的空格和特殊字符）
+            const cleanSessionId = String(sessionId).trim();
+            mapping[cleanSessionId] = teacherInfo;
+            mappingCount++;
+            
+            // 打印前几条映射关系用于调试
+            if (index < 5) {
+                console.log(`映射关系 ${index + 1}: ${cleanSessionId} -> ${teacherInfo}`);
+            }
+        }
+    });
+    
+    console.log(`成功建立 ${mappingCount} 条主讲老师映射关系`);
+    return mapping;
+}
+
+// 从主讲老师信息中提取姓名
+function extractTeacherName(teacherInfo) {
+    if (!teacherInfo) return '未知';
+    
+    // 处理格式：小王（123456）
+    const match = teacherInfo.match(/^([^（(]+)/);
+    if (match) {
+        return match[1].trim();
+    }
+    
+    return teacherInfo.trim();
+}
+
+// 生成主讲老师分析
+function generateTeacherAnalysis(data) {
+    const teacherStatsBody = document.getElementById('teacher-stats-body');
+    
+    if (!data || data.length === 0 || !teacherMapping || Object.keys(teacherMapping).length === 0) {
+        console.log('缺少评价数据或主讲老师映射数据');
+        console.log('评价数据条数:', data ? data.length : 0);
+        console.log('主讲老师映射条数:', teacherMapping ? Object.keys(teacherMapping).length : 0);
+        return;
+    }
+    
+    console.log('开始生成主讲老师分析...');
+    console.log('评价数据条数:', data.length);
+    console.log('主讲老师映射:', teacherMapping);
+    
+    // 按主讲老师分组统计
+    const teacherStats = {};
+    let matchedCount = 0;
+    let unmatchedCount = 0;
+    
+    data.forEach((row, index) => {
+        // 获取场次ID - 优先使用plan_id字段
+        let sessionId = row.plan_id || row.session_id || row.classId || row.class_id;
+        
+        if (sessionId) {
+            sessionId = String(sessionId).trim(); // 确保是字符串并去除空格
+        }
+        
+        if (!sessionId || !teacherMapping[sessionId]) {
+            unmatchedCount++;
+            if (index < 5) { // 只打印前5条未匹配的记录用于调试
+                console.log(`未匹配的sessionId: "${sessionId}", 可用的映射keys:`, Object.keys(teacherMapping).slice(0, 5));
+            }
+            return; // 跳过没有主讲老师信息的数据
+        }
+        
+        matchedCount++;
+        
+        const teacherInfo = teacherMapping[sessionId];
+        const teacherName = extractTeacherName(teacherInfo);
+        const score = parseFloat(row.stu_score) || 0;
+        const labels = row.label ? row.label.split(',').map(label => cleanLabel(label)) : [];
+        
+        if (!teacherStats[teacherName]) {
+            teacherStats[teacherName] = {
+                totalCount: 0,
+                fiveStarCount: 0,
+                oneStarCount: 0,
+                labelCounts: {
+                    '讲解很透彻': 0,
+                    '非常幽默': 0,
+                    '从来不拖堂': 0,
+                    '讲解混乱': 0,
+                    '有点无聊': 0,
+                    '每次都拖堂': 0
+                }
+            };
+        }
+        
+        const stats = teacherStats[teacherName];
+        stats.totalCount++;
+        
+        if (score === 5) {
+            stats.fiveStarCount++;
+        } else if (score === 1) {
+            stats.oneStarCount++;
+        }
+        
+        // 统计标签
+        labels.forEach(label => {
+            if (stats.labelCounts.hasOwnProperty(label)) {
+                stats.labelCounts[label]++;
+            }
+        });
+    });
+    
+    // 计算平均值
+    const teacherNames = Object.keys(teacherStats);
+    const averageStats = {
+        fiveStarRate: 0,
+        oneStarRate: 0,
+        labelRates: {
+            '讲解很透彻': 0,
+            '非常幽默': 0,
+            '从来不拖堂': 0,
+            '讲解混乱': 0,
+            '有点无聊': 0,
+            '每次都拖堂': 0
+        }
+    };
+    
+    if (teacherNames.length > 0) {
+        let totalFiveStarRate = 0;
+        let totalOneStarRate = 0;
+        const totalLabelRates = {
+            '讲解很透彻': 0,
+            '非常幽默': 0,
+            '从来不拖堂': 0,
+            '讲解混乱': 0,
+            '有点无聊': 0,
+            '每次都拖堂': 0
+        };
+        
+        teacherNames.forEach(name => {
+            const stats = teacherStats[name];
+            const fiveStarRate = stats.totalCount > 0 ? (stats.fiveStarCount / stats.totalCount * 100) : 0;
+            const oneStarRate = stats.totalCount > 0 ? (stats.oneStarCount / stats.totalCount * 100) : 0;
+            
+            totalFiveStarRate += fiveStarRate;
+            totalOneStarRate += oneStarRate;
+            
+            Object.keys(totalLabelRates).forEach(label => {
+                const labelRate = stats.totalCount > 0 ? (stats.labelCounts[label] / stats.totalCount * 100) : 0;
+                totalLabelRates[label] += labelRate;
+            });
+        });
+        
+        averageStats.fiveStarRate = totalFiveStarRate / teacherNames.length;
+        averageStats.oneStarRate = totalOneStarRate / teacherNames.length;
+        Object.keys(averageStats.labelRates).forEach(label => {
+            averageStats.labelRates[label] = totalLabelRates[label] / teacherNames.length;
+        });
+    }
+    
+    // 生成表格HTML
+    let html = '';
+    
+    // 添加各个主讲老师的数据
+    teacherNames.forEach(name => {
+        const stats = teacherStats[name];
+        const fiveStarRate = stats.totalCount > 0 ? (stats.fiveStarCount / stats.totalCount * 100) : 0;
+        const oneStarRate = stats.totalCount > 0 ? (stats.oneStarCount / stats.totalCount * 100) : 0;
+        
+        const labelRates = {};
+        Object.keys(stats.labelCounts).forEach(label => {
+            labelRates[label] = stats.totalCount > 0 ? (stats.labelCounts[label] / stats.totalCount * 100) : 0;
+        });
+        
+        // 判断是否高于平均值
+        const fiveStarAboveAvg = fiveStarRate > averageStats.fiveStarRate;
+        const oneStarAboveAvg = oneStarRate > averageStats.oneStarRate;
+        
+        const labelAboveAvg = {};
+        Object.keys(labelRates).forEach(label => {
+            labelAboveAvg[label] = labelRates[label] > averageStats.labelRates[label];
+        });
+
+        html += `
+            <tr>
+                <td class="teacher-name-cell">${name}</td>
+                <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}">${fiveStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}">${labelRates['非常幽默'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
+                <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}">${oneStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}">${labelRates['讲解混乱'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}">${labelRates['有点无聊'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
+            </tr>
+        `;
+    });
+    
+    // 添加平均值行
+    html += `
+        <tr class="average-row">
+            <td class="teacher-name-cell">该讲次主讲平均值</td>
+            <td class="rate-cell">${averageStats.fiveStarRate.toFixed(1)}%</td>
+            <td class="rate-cell">${averageStats.labelRates['讲解很透彻'].toFixed(1)}%</td>
+            <td class="rate-cell">${averageStats.labelRates['非常幽默'].toFixed(1)}%</td>
+            <td class="rate-cell">${averageStats.labelRates['从来不拖堂'].toFixed(1)}%</td>
+            <td class="rate-cell">${averageStats.oneStarRate.toFixed(1)}%</td>
+            <td class="rate-cell">${averageStats.labelRates['讲解混乱'].toFixed(1)}%</td>
+            <td class="rate-cell">${averageStats.labelRates['有点无聊'].toFixed(1)}%</td>
+            <td class="rate-cell">${averageStats.labelRates['每次都拖堂'].toFixed(1)}%</td>
+        </tr>
+    `;
+    
+    console.log(`数据匹配结果: 匹配 ${matchedCount} 条, 未匹配 ${unmatchedCount} 条`);
+    console.log('主讲老师统计结果:', teacherStats);
+    
+    // 保存统计数据到全局变量
+    teacherStatsData = teacherStats;
+    teacherAverageStats = averageStats;
+    
+    // 填充主讲姓名筛选下拉框
+    populateTeacherNameFilter(teacherNames);
+    
+    teacherStatsBody.innerHTML = html;
+}
+
+// 填充主讲姓名筛选下拉框
+function populateTeacherNameFilter(teacherNames) {
+    if (!teacherNameFilter) return;
+    
+    // 清空下拉框
+    teacherNameFilter.innerHTML = '<option value="all">全部主讲老师</option>';
+    
+    // 添加每个主讲老师
+    teacherNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        teacherNameFilter.appendChild(option);
+    });
+}
+
+// 应用主讲老师筛选和排序
+function applyTeacherFilters() {
+    const nameFilter = teacherNameFilter.value;
+    const sortField = teacherSortField.value;
+    const sortOrder = teacherSortOrder.value;
+    
+    // 筛选数据
+    let filteredTeachers = Object.keys(teacherStatsData);
+    if (nameFilter !== 'all') {
+        filteredTeachers = filteredTeachers.filter(name => name === nameFilter);
+    }
+    
+    // 排序数据
+    filteredTeachers.sort((a, b) => {
+        let valueA, valueB;
+        
+        if (sortField === 'name') {
+            valueA = a;
+            valueB = b;
+        } else if (sortField === 'fiveStarRate') {
+            const statsA = teacherStatsData[a];
+            const statsB = teacherStatsData[b];
+            valueA = statsA.totalCount > 0 ? (statsA.fiveStarCount / statsA.totalCount * 100) : 0;
+            valueB = statsB.totalCount > 0 ? (statsB.fiveStarCount / statsB.totalCount * 100) : 0;
+        } else if (sortField === 'oneStarRate') {
+            const statsA = teacherStatsData[a];
+            const statsB = teacherStatsData[b];
+            valueA = statsA.totalCount > 0 ? (statsA.oneStarCount / statsA.totalCount * 100) : 0;
+            valueB = statsB.totalCount > 0 ? (statsB.oneStarCount / statsB.totalCount * 100) : 0;
+        } else {
+            // 标签字段
+            const statsA = teacherStatsData[a];
+            const statsB = teacherStatsData[b];
+            valueA = statsA.totalCount > 0 ? (statsA.labelCounts[sortField] / statsA.totalCount * 100) : 0;
+            valueB = statsB.totalCount > 0 ? (statsB.labelCounts[sortField] / statsB.totalCount * 100) : 0;
+        }
+        
+        if (sortField === 'name') {
+            // 字符串排序
+            if (sortOrder === 'asc') {
+                return valueA.localeCompare(valueB);
+            } else {
+                return valueB.localeCompare(valueA);
+            }
+        } else {
+            // 数值排序
+            if (sortOrder === 'asc') {
+                return valueA - valueB;
+            } else {
+                return valueB - valueA;
+            }
+        }
+    });
+    
+    // 重新生成表格
+    generateFilteredTeacherTable(filteredTeachers);
+}
+
+// 生成筛选后的主讲老师表格
+function generateFilteredTeacherTable(filteredTeachers) {
+    const teacherStatsBody = document.getElementById('teacher-stats-body');
+    
+    let html = '';
+    
+    // 添加各个主讲老师的数据
+    filteredTeachers.forEach(name => {
+        const stats = teacherStatsData[name];
+        const fiveStarRate = stats.totalCount > 0 ? (stats.fiveStarCount / stats.totalCount * 100) : 0;
+        const oneStarRate = stats.totalCount > 0 ? (stats.oneStarCount / stats.totalCount * 100) : 0;
+        
+        const labelRates = {};
+        Object.keys(stats.labelCounts).forEach(label => {
+            labelRates[label] = stats.totalCount > 0 ? (stats.labelCounts[label] / stats.totalCount * 100) : 0;
+        });
+        
+        // 判断是否高于平均值
+        const fiveStarAboveAvg = fiveStarRate > teacherAverageStats.fiveStarRate;
+        const oneStarAboveAvg = oneStarRate > teacherAverageStats.oneStarRate;
+        
+        const labelAboveAvg = {};
+        Object.keys(labelRates).forEach(label => {
+            labelAboveAvg[label] = labelRates[label] > teacherAverageStats.labelRates[label];
+        });
+        
+        html += `
+            <tr>
+                <td class="teacher-name-cell">${name}</td>
+                <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}">${fiveStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}">${labelRates['非常幽默'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
+                <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}">${oneStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}">${labelRates['讲解混乱'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}">${labelRates['有点无聊'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
+            </tr>
+        `;
+    });
+    
+    // 添加平均值行
+    html += `
+        <tr class="average-row">
+            <td class="teacher-name-cell">该讲次主讲平均值</td>
+            <td class="rate-cell">${teacherAverageStats.fiveStarRate.toFixed(1)}%</td>
+            <td class="rate-cell">${teacherAverageStats.labelRates['讲解很透彻'].toFixed(1)}%</td>
+            <td class="rate-cell">${teacherAverageStats.labelRates['非常幽默'].toFixed(1)}%</td>
+            <td class="rate-cell">${teacherAverageStats.labelRates['从来不拖堂'].toFixed(1)}%</td>
+            <td class="rate-cell">${teacherAverageStats.oneStarRate.toFixed(1)}%</td>
+            <td class="rate-cell">${teacherAverageStats.labelRates['讲解混乱'].toFixed(1)}%</td>
+            <td class="rate-cell">${teacherAverageStats.labelRates['有点无聊'].toFixed(1)}%</td>
+            <td class="rate-cell">${teacherAverageStats.labelRates['每次都拖堂'].toFixed(1)}%</td>
+        </tr>
+    `;
+    
+    teacherStatsBody.innerHTML = html;
 } 

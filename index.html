@@ -47,23 +47,50 @@
                 <button id="minimize-btn" class="icon-btn hidden"><i class="bi bi-chevron-up"></i></button>
             </div>
             <div id="upload-content" class="upload-content">
-                <div class="file-upload-wrapper">
-                    <div class="file-upload-area">
-                        <i class="bi bi-cloud-arrow-up upload-icon"></i>
-                        <div class="upload-text">
-                            <p>拖拽文件到此处或点击选择文件</p>
-                            <p class="upload-hint">支持 .xlsx, .xls, .csv 格式</p>
+                <!-- 评价数据上传 -->
+                <div class="upload-group">
+                    <h3>评价数据</h3>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-area">
+                            <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                            <div class="upload-text">
+                                <p>拖拽评价数据文件到此处或点击选择文件</p>
+                                <p class="upload-hint">支持 .xlsx, .xls, .csv 格式</p>
+                            </div>
+                            <input type="file" id="file-upload" accept=".xlsx,.xls,.csv">
                         </div>
-                        <input type="file" id="file-upload" accept=".xlsx,.xls,.csv">
-                    </div>
-                    <div id="file-info" class="file-info hidden">
-                        <div class="file-name-container">
-                            <i class="bi bi-file-earmark-spreadsheet file-icon"></i>
-                            <span id="selected-filename">未选择文件</span>
+                        <div id="file-info" class="file-info hidden">
+                            <div class="file-name-container">
+                                <i class="bi bi-file-earmark-spreadsheet file-icon"></i>
+                                <span id="selected-filename">未选择文件</span>
+                            </div>
+                            <button id="change-file-btn" class="secondary-btn">更换文件</button>
                         </div>
-                        <button id="change-file-btn" class="secondary-btn">更换文件</button>
                     </div>
                 </div>
+                
+                <!-- 主讲老师信息上传 -->
+                <div class="upload-group">
+                    <h3>主讲老师信息</h3>
+                    <div class="file-upload-wrapper">
+                        <div class="file-upload-area teacher-upload-area">
+                            <i class="bi bi-cloud-arrow-up upload-icon"></i>
+                            <div class="upload-text">
+                                <p>拖拽主讲老师信息文件到此处或点击选择文件</p>
+                                <p class="upload-hint">支持 .xlsx, .xls, .csv 格式，包含场次ID和主讲老师列</p>
+                            </div>
+                            <input type="file" id="teacher-file-upload" accept=".xlsx,.xls,.csv">
+                        </div>
+                        <div id="teacher-file-info" class="file-info hidden">
+                            <div class="file-name-container">
+                                <i class="bi bi-file-earmark-spreadsheet file-icon"></i>
+                                <span id="teacher-selected-filename">未选择文件</span>
+                            </div>
+                            <button id="teacher-change-file-btn" class="secondary-btn">更换文件</button>
+                        </div>
+                    </div>
+                </div>
+                
                 <button id="upload-btn" class="primary-btn">分析数据</button>
             </div>
             
@@ -71,6 +98,8 @@
                 <div class="selected-file-info">
                     <i class="bi bi-file-earmark-spreadsheet file-icon"></i>
                     <span id="collapsed-filename">未选择文件</span>
+                    <span class="file-separator">|</span>
+                    <span id="collapsed-teacher-filename">未选择主讲老师文件</span>
                 </div>
                 <button id="expand-btn" class="secondary-btn">更换数据</button>
             </div>
@@ -119,6 +148,69 @@
                 <div class="dashboard-card">
                     <h3>评分趋势</h3>
                     <div id="time-chart" class="chart"></div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 主讲老师分析模块 -->
+        <section id="teacher-analysis" class="teacher-analysis hidden">
+            <h2>主讲老师分析</h2>
+            
+            <!-- 筛选和排序控件 -->
+            <div class="teacher-controls">
+                <div class="control-group">
+                    <label for="teacher-name-filter">主讲姓名筛选：</label>
+                    <select id="teacher-name-filter">
+                        <option value="all">全部主讲老师</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="teacher-sort-field">排序字段：</label>
+                    <select id="teacher-sort-field">
+                        <option value="fiveStarRate">五星率</option>
+                        <option value="oneStarRate">一星率</option>
+                        <option value="讲解很透彻">讲清楚</option>
+                        <option value="非常幽默">吸引人</option>
+                        <option value="从来不拖堂">不拖堂</option>
+                        <option value="讲解混乱">不清楚</option>
+                        <option value="有点无聊">没意思</option>
+                        <option value="每次都拖堂">拖堂</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="teacher-sort-order">排序方式：</label>
+                    <select id="teacher-sort-order">
+                        <option value="desc">降序（高到低）</option>
+                        <option value="asc">升序（低到高）</option>
+                    </select>
+                </div>
+                <button id="teacher-apply-filter" class="filter-btn">应用筛选</button>
+            </div>
+            
+            <div class="teacher-analysis-container">
+                <div class="teacher-table-wrapper">
+                    <table class="teacher-stats-table">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" class="teacher-name-header">主讲姓名</th>
+                                <th colspan="4" class="five-star-header">五星（满分）率</th>
+                                <th colspan="4" class="one-star-header">一星率</th>
+                            </tr>
+                            <tr>
+                                <th class="sub-header">五星率</th>
+                                <th class="sub-header">讲清楚</th>
+                                <th class="sub-header">吸引人</th>
+                                <th class="sub-header">不拖堂</th>
+                                <th class="sub-header">一星率</th>
+                                <th class="sub-header">不清楚</th>
+                                <th class="sub-header">没意思</th>
+                                <th class="sub-header">拖堂</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-stats-body">
+                            <!-- 主讲老师统计数据将在这里动态生成 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>

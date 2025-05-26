@@ -561,4 +561,256 @@ button:hover {
 #prev-page:hover, #next-page:hover, 
 #comments-prev-page:hover, #comments-next-page:hover {
     background-color: #2980b9;
+}
+
+/* 上传区域分组样式 */
+.upload-group {
+    border: 1px solid #e8ecef;
+    border-radius: 8px;
+    padding: 20px;
+    background-color: #fafbfc;
+}
+
+.upload-group h3 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.teacher-upload-area {
+    border-color: #27ae60;
+}
+
+.teacher-upload-area:hover {
+    border-color: #229954;
+    background-color: #f0f9f4;
+}
+
+.teacher-upload-area .upload-icon {
+    color: #27ae60;
+}
+
+.file-separator {
+    color: #95a5a6;
+    margin: 0 10px;
+}
+
+/* 主讲老师分析模块样式 */
+.teacher-analysis {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+/* 主讲老师控件样式 */
+.teacher-controls {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: end;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 150px;
+}
+
+.control-group label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.control-group select {
+    padding: 8px 12px;
+    border: 2px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.3s ease;
+    color: #495057;
+}
+
+.control-group select:focus {
+    outline: none;
+    border-color: #2196f3;
+    box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25);
+}
+
+#teacher-apply-filter {
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+    height: fit-content;
+}
+
+#teacher-apply-filter:hover {
+    background-color: #218838;
+}
+
+.teacher-analysis-container {
+    overflow-x: auto;
+}
+
+.teacher-table-wrapper {
+    min-width: 800px;
+}
+
+.teacher-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.teacher-stats-table th,
+.teacher-stats-table td {
+    border: 1px solid #ddd;
+    padding: 12px 8px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.teacher-stats-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.teacher-name-header {
+    background-color: #e8f4fd !important;
+    color: #2c3e50 !important;
+    font-weight: 700;
+    min-width: 100px;
+}
+
+.five-star-header {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    font-weight: 700;
+}
+
+.one-star-header {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+    font-weight: 700;
+}
+
+.sub-header {
+    background-color: #f1f3f4 !important;
+    color: #495057 !important;
+    font-weight: 500;
+    font-size: 12px;
+    min-width: 80px;
+}
+
+.teacher-stats-table tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.teacher-stats-table tbody tr:hover {
+    background-color: #e3f2fd;
+}
+
+.teacher-name-cell {
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: left !important;
+    padding-left: 15px;
+}
+
+.rate-cell {
+    font-weight: 500;
+}
+
+.five-star-rate {
+    color: #28a745;
+}
+
+.one-star-rate {
+    color: #dc3545;
+}
+
+.high-rate {
+    background-color: #d4edda;
+    color: #155724;
+    font-weight: 600;
+}
+
+.low-rate {
+    background-color: #f8d7da;
+    color: #721c24;
+    font-weight: 600;
+}
+
+/* 高于平均值的样式 */
+.above-average-five-star {
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+    font-weight: 700;
+    border: 2px solid #bee5eb;
+}
+
+.above-average-one-star {
+    background-color: #f5c6cb !important;
+    color: #721c24 !important;
+    font-weight: 700;
+    border: 2px solid #f1b0b7;
+}
+
+.average-row {
+    background-color: #e9ecef !important;
+    font-weight: 600;
+}
+
+.average-row td {
+    border-top: 2px solid #6c757d;
+}
+
+.average-row .teacher-name-cell {
+    color: #495057;
+    font-style: italic;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .upload-content {
+        gap: 15px;
+    }
+    
+    .upload-group {
+        padding: 15px;
+    }
+    
+    .teacher-analysis-container {
+        padding: 0 10px;
+    }
+    
+    .teacher-stats-table {
+        font-size: 12px;
+    }
+    
+    .teacher-stats-table th,
+    .teacher-stats-table td {
+        padding: 8px 4px;
+    }
+    
+    .sub-header {
+        font-size: 10px;
+    }
 } 
