@@ -813,4 +813,58 @@ button:hover {
     .sub-header {
         font-size: 10px;
     }
+}
+
+/* 具体场次相关样式 */
+.session-header {
+    background-color: #f3e5f5 !important;
+    color: #7b1fa2 !important;
+    font-weight: 700;
+    min-width: 100px;
+}
+
+.session-time-header {
+    background-color: #f3e5f5 !important;
+    color: #7b1fa2 !important;
+    font-weight: 700;
+    min-width: 150px;
+}
+
+.session-five-star-header {
+    background-color: #e8f5e8 !important;
+    color: #2e7d32 !important;
+    font-weight: 700;
+}
+
+.session-one-star-header {
+    background-color: #ffebee !important;
+    color: #c62828 !important;
+    font-weight: 700;
+}
+
+.session-cell {
+    font-weight: 500;
+    color: #7b1fa2;
+    text-align: center;
+}
+
+.session-time-cell {
+    font-weight: 500;
+    color: #7b1fa2;
+    text-align: center;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.session-row {
+    background-color: #fafafa !important;
+}
+
+.session-row:hover {
+    background-color: #f0f0f0 !important;
+}
+
+.session-row .rate-cell {
+    font-size: 12px;
+    color: #666;
 } 

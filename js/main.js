@@ -6,8 +6,10 @@ let currentPage = 1;
 const rowsPerPage = 10;
 let teacherData = []; // 主讲老师数据
 let teacherMapping = {}; // 场次ID到主讲老师的映射
+let teacherSessionMapping = {}; // 场次ID到场次时间的映射
 let teacherStatsData = {}; // 主讲老师统计数据
 let teacherAverageStats = {}; // 主讲老师平均值统计
+let sessionStatsData = {}; // 场次统计数据
 
 // 评分和标签的映射关系
 const scoreLabelsMap = {
@@ -1588,6 +1590,7 @@ function getDeviceBrand(deviceModel) {
 // 构建主讲老师映射关系
 function buildTeacherMapping(teacherData) {
     const mapping = {};
+    const sessionMapping = {};
     
     if (!teacherData || teacherData.length === 0) {
         return mapping;
@@ -1634,6 +1637,22 @@ function buildTeacherMapping(teacherData) {
         }
     }
     
+    // 查找场次时间字段
+    let sessionTimeField = null;
+    const sessionTimeCandidates = [
+        '真实上课时间', '上课时间', '场次时间', '开课时间', '课程时间',
+        'session_time', 'class_time', 'course_time', 'start_time', 'time',
+        '时间', '日期时间', '开始时间'
+    ];
+    
+    for (const candidate of sessionTimeCandidates) {
+        if (fields.includes(candidate)) {
+            sessionTimeField = candidate;
+            console.log(`找到场次时间字段: ${candidate}`);
+            break;
+        }
+    }
+    
     // 如果没有找到精确匹配，尝试模糊匹配
     if (!sessionIdField) {
         for (const field of fields) {
@@ -1657,6 +1676,17 @@ function buildTeacherMapping(teacherData) {
         }
     }
     
+    if (!sessionTimeField) {
+        for (const field of fields) {
+            if (field.includes('时间') || field.includes('日期') ||
+                field.toLowerCase().includes('time') || field.toLowerCase().includes('date')) {
+                sessionTimeField = field;
+                console.log(`模糊匹配到场次时间字段: ${field}`);
+                break;
+            }
+        }
+    }
+    
     if (!sessionIdField || !teacherField) {
         console.warn('未找到合适的场次ID或主讲老师字段');
         console.log('可用字段:', fields);
@@ -1664,28 +1694,39 @@ function buildTeacherMapping(teacherData) {
         return mapping;
     }
     
-    console.log(`使用字段 - 场次ID: ${sessionIdField}, 主讲老师: ${teacherField}`);
+    console.log(`使用字段 - 场次ID: ${sessionIdField}, 主讲老师: ${teacherField}, 场次时间: ${sessionTimeField || '未找到'}`);
     
     // 构建映射关系
     let mappingCount = 0;
     teacherData.forEach((row, index) => {
         const sessionId = row[sessionIdField];
         const teacherInfo = row[teacherField];
+        const sessionTime = sessionTimeField ? row[sessionTimeField] : '';
         
         if (sessionId && teacherInfo) {
             // 清理场次ID（去除可能的空格和特殊字符）
             const cleanSessionId = String(sessionId).trim();
             mapping[cleanSessionId] = teacherInfo;
+            
+            // 构建场次时间映射
+            if (sessionTime) {
+                sessionMapping[cleanSessionId] = String(sessionTime).trim();
+            }
+            
             mappingCount++;
             
             // 打印前几条映射关系用于调试
             if (index < 5) {
-                console.log(`映射关系 ${index + 1}: ${cleanSessionId} -> ${teacherInfo}`);
+                console.log(`映射关系 ${index + 1}: ${cleanSessionId} -> ${teacherInfo} (${sessionTime || '无时间信息'})`);
             }
         }
     });
     
     console.log(`成功建立 ${mappingCount} 条主讲老师映射关系`);
+    
+    // 保存场次时间映射到全局变量
+    window.teacherSessionMapping = sessionMapping;
+    
     return mapping;
 }
 
@@ -1717,8 +1758,9 @@ function generateTeacherAnalysis(data) {
     console.log('评价数据条数:', data.length);
     console.log('主讲老师映射:', teacherMapping);
     
-    // 按主讲老师分组统计
+    // 按主讲老师和场次分组统计
     const teacherStats = {};
+    const sessionStats = {}; // 按场次统计
     let matchedCount = 0;
     let unmatchedCount = 0;
     
@@ -1745,8 +1787,29 @@ function generateTeacherAnalysis(data) {
         const score = parseFloat(row.stu_score) || 0;
         const labels = row.label ? row.label.split(',').map(label => cleanLabel(label)) : [];
         
+        // 初始化主讲老师统计
         if (!teacherStats[teacherName]) {
             teacherStats[teacherName] = {
+                totalCount: 0,
+                fiveStarCount: 0,
+                oneStarCount: 0,
+                sessions: new Set(), // 记录该主讲老师的所有场次
+                labelCounts: {
+                    '讲解很透彻': 0,
+                    '非常幽默': 0,
+                    '从来不拖堂': 0,
+                    '讲解混乱': 0,
+                    '有点无聊': 0,
+                    '每次都拖堂': 0
+                }
+            };
+        }
+        
+        // 初始化场次统计
+        if (!sessionStats[sessionId]) {
+            sessionStats[sessionId] = {
+                teacherName: teacherName,
+                sessionTime: window.teacherSessionMapping[sessionId] || '',
                 totalCount: 0,
                 fiveStarCount: 0,
                 oneStarCount: 0,
@@ -1761,19 +1824,34 @@ function generateTeacherAnalysis(data) {
             };
         }
         
-        const stats = teacherStats[teacherName];
-        stats.totalCount++;
+        // 更新主讲老师统计
+        const teacherStat = teacherStats[teacherName];
+        teacherStat.totalCount++;
+        teacherStat.sessions.add(sessionId);
         
         if (score === 5) {
-            stats.fiveStarCount++;
+            teacherStat.fiveStarCount++;
         } else if (score === 1) {
-            stats.oneStarCount++;
+            teacherStat.oneStarCount++;
         }
         
-        // 统计标签
+        // 更新场次统计
+        const sessionStat = sessionStats[sessionId];
+        sessionStat.totalCount++;
+        
+        if (score === 5) {
+            sessionStat.fiveStarCount++;
+        } else if (score === 1) {
+            sessionStat.oneStarCount++;
+        }
+        
+        // 统计标签（主讲老师和场次都要统计）
         labels.forEach(label => {
-            if (stats.labelCounts.hasOwnProperty(label)) {
-                stats.labelCounts[label]++;
+            if (teacherStat.labelCounts.hasOwnProperty(label)) {
+                teacherStat.labelCounts[label]++;
+            }
+            if (sessionStat.labelCounts.hasOwnProperty(label)) {
+                sessionStat.labelCounts[label]++;
             }
         });
     });
@@ -1849,19 +1927,64 @@ function generateTeacherAnalysis(data) {
             labelAboveAvg[label] = labelRates[label] > averageStats.labelRates[label];
         });
 
-        html += `
-            <tr>
-                <td class="teacher-name-cell">${name}</td>
-                <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}">${fiveStarRate.toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}">${labelRates['非常幽默'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
-                <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}">${oneStarRate.toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}">${labelRates['讲解混乱'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}">${labelRates['有点无聊'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
-            </tr>
-        `;
+        // 获取该主讲老师的所有场次
+        const teacherSessions = Array.from(stats.sessions);
+        const sessionCount = teacherSessions.length;
+        
+        // 为每个场次生成一行数据
+        teacherSessions.forEach((sessionId, index) => {
+            const sessionStat = sessionStats[sessionId];
+            const sessionFiveStarRate = sessionStat.totalCount > 0 ? (sessionStat.fiveStarCount / sessionStat.totalCount * 100) : 0;
+            const sessionOneStarRate = sessionStat.totalCount > 0 ? (sessionStat.oneStarCount / sessionStat.totalCount * 100) : 0;
+            
+            const sessionLabelRates = {};
+            Object.keys(sessionStat.labelCounts).forEach(label => {
+                sessionLabelRates[label] = sessionStat.totalCount > 0 ? (sessionStat.labelCounts[label] / sessionStat.totalCount * 100) : 0;
+            });
+            
+            if (index === 0) {
+                // 第一行：显示主讲老师汇总数据 + 第一个场次数据
+                html += `
+                <tr>
+                    <td class="teacher-name-cell" rowspan="${sessionCount}">${name}</td>
+                    <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${fiveStarRate.toFixed(1)}%</td>
+                    <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
+                    <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['非常幽默'].toFixed(1)}%</td>
+                    <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
+                    <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${oneStarRate.toFixed(1)}%</td>
+                    <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解混乱'].toFixed(1)}%</td>
+                    <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['有点无聊'].toFixed(1)}%</td>
+                    <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
+                    <td class="session-cell">${sessionId}</td>
+                    <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
+                    <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['讲解很透彻'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['非常幽默'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['从来不拖堂'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionOneStarRate.toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['讲解混乱'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
+                </tr>
+                `;
+            } else {
+                // 其他场次行：只显示场次数据
+                html += `
+                <tr class="session-row">
+                    <td class="session-cell">${sessionId}</td>
+                    <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
+                    <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['讲解很透彻'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['非常幽默'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['从来不拖堂'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionOneStarRate.toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['讲解混乱'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
+                    <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
+                </tr>
+                `;
+            }
+        });
     });
     
     // 添加平均值行
@@ -1876,6 +1999,16 @@ function generateTeacherAnalysis(data) {
             <td class="rate-cell">${averageStats.labelRates['讲解混乱'].toFixed(1)}%</td>
             <td class="rate-cell">${averageStats.labelRates['有点无聊'].toFixed(1)}%</td>
             <td class="rate-cell">${averageStats.labelRates['每次都拖堂'].toFixed(1)}%</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
         </tr>
     `;
     
@@ -1885,6 +2018,7 @@ function generateTeacherAnalysis(data) {
     // 保存统计数据到全局变量
     teacherStatsData = teacherStats;
     teacherAverageStats = averageStats;
+    sessionStatsData = sessionStats;
     
     // 填充主讲姓名筛选下拉框
     populateTeacherNameFilter(teacherNames);
@@ -1992,19 +2126,66 @@ function generateFilteredTeacherTable(filteredTeachers) {
             labelAboveAvg[label] = labelRates[label] > teacherAverageStats.labelRates[label];
         });
         
-        html += `
-            <tr>
-                <td class="teacher-name-cell">${name}</td>
-                <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}">${fiveStarRate.toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}">${labelRates['非常幽默'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
-                <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}">${oneStarRate.toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}">${labelRates['讲解混乱'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}">${labelRates['有点无聊'].toFixed(1)}%</td>
-                <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
-            </tr>
-        `;
+        // 获取该主讲老师的所有场次
+        const teacherSessions = Array.from(stats.sessions || []);
+        const sessionCount = teacherSessions.length;
+        
+        // 为每个场次生成一行数据
+        teacherSessions.forEach((sessionId, index) => {
+            const sessionStat = sessionStatsData[sessionId];
+            if (sessionStat) {
+                const sessionFiveStarRate = sessionStat.totalCount > 0 ? (sessionStat.fiveStarCount / sessionStat.totalCount * 100) : 0;
+                const sessionOneStarRate = sessionStat.totalCount > 0 ? (sessionStat.oneStarCount / sessionStat.totalCount * 100) : 0;
+                
+                const sessionLabelRates = {};
+                Object.keys(sessionStat.labelCounts).forEach(label => {
+                    sessionLabelRates[label] = sessionStat.totalCount > 0 ? (sessionStat.labelCounts[label] / sessionStat.totalCount * 100) : 0;
+                });
+                
+                if (index === 0) {
+                    // 第一行：显示主讲老师汇总数据 + 第一个场次数据
+                    html += `
+                    <tr>
+                        <td class="teacher-name-cell" rowspan="${sessionCount}">${name}</td>
+                        <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${fiveStarRate.toFixed(1)}%</td>
+                        <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
+                        <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['非常幽默'].toFixed(1)}%</td>
+                        <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
+                        <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${oneStarRate.toFixed(1)}%</td>
+                        <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解混乱'].toFixed(1)}%</td>
+                        <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['有点无聊'].toFixed(1)}%</td>
+                        <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
+                        <td class="session-cell">${sessionId}</td>
+                        <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
+                        <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['讲解很透彻'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['非常幽默'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['从来不拖堂'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionOneStarRate.toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['讲解混乱'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
+                    </tr>
+                    `;
+                } else {
+                    // 其他场次行：只显示场次数据
+                    html += `
+                    <tr class="session-row">
+                        <td class="session-cell">${sessionId}</td>
+                        <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
+                        <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['讲解很透彻'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['非常幽默'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['从来不拖堂'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionOneStarRate.toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['讲解混乱'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
+                        <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
+                    </tr>
+                    `;
+                }
+            }
+        });
     });
     
     // 添加平均值行
@@ -2019,6 +2200,16 @@ function generateFilteredTeacherTable(filteredTeachers) {
             <td class="rate-cell">${teacherAverageStats.labelRates['讲解混乱'].toFixed(1)}%</td>
             <td class="rate-cell">${teacherAverageStats.labelRates['有点无聊'].toFixed(1)}%</td>
             <td class="rate-cell">${teacherAverageStats.labelRates['每次都拖堂'].toFixed(1)}%</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
+            <td class="rate-cell">-</td>
         </tr>
     `;
     
