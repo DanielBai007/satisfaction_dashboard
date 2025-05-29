@@ -113,12 +113,6 @@ const commentsPageInfoElement = document.getElementById('comments-page-info');
 
 // 主讲老师分析控件DOM元素
 const teacherNameFilter = document.getElementById('teacher-name-filter');
-const teacherProductLineSearch = document.getElementById('teacher-product-line-search');
-const clearProductLineBtn = document.getElementById('clear-product-line');
-const teacherGradeFilter = document.getElementById('teacher-grade-filter');
-const teacherSubjectFilter = document.getElementById('teacher-subject-filter');
-const teacherSessionSearch = document.getElementById('teacher-session-search');
-const clearSessionBtn = document.getElementById('clear-session');
 const teacherSortField = document.getElementById('teacher-sort-field');
 const teacherSortOrder = document.getElementById('teacher-sort-order');
 const teacherApplyFilter = document.getElementById('teacher-apply-filter');
@@ -138,18 +132,6 @@ let versionChart;
 document.addEventListener('DOMContentLoaded', () => {
     initEventListeners();
 });
-
-// 更新清除按钮的显示状态
-function updateClearButtonVisibility(inputElement, clearButton) {
-    if (!inputElement || !clearButton) return;
-    
-    const hasValue = inputElement.value.trim().length > 0;
-    if (hasValue) {
-        clearButton.style.display = 'flex';
-    } else {
-        clearButton.style.display = 'none';
-    }
-}
 
 // 初始化事件监听器
 function initEventListeners() {
@@ -284,70 +266,9 @@ function initEventListeners() {
         });
     }
     
-    // 主讲老师分析控件 - 自动筛选
-    if (teacherNameFilter) {
-        teacherNameFilter.addEventListener('change', applyTeacherFilters);
-    }
-    
-    if (teacherGradeFilter) {
-        teacherGradeFilter.addEventListener('change', applyTeacherFilters);
-    }
-    
-    if (teacherSubjectFilter) {
-        teacherSubjectFilter.addEventListener('change', applyTeacherFilters);
-    }
-    
-    if (teacherSortField) {
-        teacherSortField.addEventListener('change', applyTeacherFilters);
-    }
-    
-    if (teacherSortOrder) {
-        teacherSortOrder.addEventListener('change', applyTeacherFilters);
-    }
-    
-    // 保留应用筛选按钮（可选使用）
+    // 主讲老师分析控件
     if (teacherApplyFilter) {
         teacherApplyFilter.addEventListener('click', applyTeacherFilters);
-    }
-    
-    // 产品线搜索功能 - 实时筛选和清除按钮显示控制
-    if (teacherProductLineSearch) {
-        teacherProductLineSearch.addEventListener('input', () => {
-            updateClearButtonVisibility(teacherProductLineSearch, clearProductLineBtn);
-            applyTeacherFilters();
-        });
-        
-        // 初始化清除按钮显示状态
-        updateClearButtonVisibility(teacherProductLineSearch, clearProductLineBtn);
-    }
-    
-    // 清空产品线搜索
-    if (clearProductLineBtn) {
-        clearProductLineBtn.addEventListener('click', () => {
-            teacherProductLineSearch.value = '';
-            updateClearButtonVisibility(teacherProductLineSearch, clearProductLineBtn);
-            applyTeacherFilters();
-        });
-    }
-    
-    // 场次ID搜索功能 - 实时筛选和清除按钮显示控制
-    if (teacherSessionSearch) {
-        teacherSessionSearch.addEventListener('input', () => {
-            updateClearButtonVisibility(teacherSessionSearch, clearSessionBtn);
-            applyTeacherFilters();
-        });
-        
-        // 初始化清除按钮显示状态
-        updateClearButtonVisibility(teacherSessionSearch, clearSessionBtn);
-    }
-    
-    // 清空场次ID搜索
-    if (clearSessionBtn) {
-        clearSessionBtn.addEventListener('click', () => {
-            teacherSessionSearch.value = '';
-            updateClearButtonVisibility(teacherSessionSearch, clearSessionBtn);
-            applyTeacherFilters();
-        });
     }
 }
 
@@ -422,9 +343,6 @@ function expandUploadSection() {
     
     // 隐藏悬浮按钮（如果已显示）
     floatingBtn.classList.add('hidden');
-    
-    // 隐藏左侧导航菜单
-    toggleSideNavigation(false);
     
     // 确保上传区域可见
     uploadSection.scrollIntoView({ behavior: 'smooth' });
@@ -510,20 +428,11 @@ async function handleFileUpload() {
             
             // 显示悬浮按钮
             floatingBtn.classList.remove('hidden');
-            
-            // 只有在数据成功处理后才显示左侧导航菜单
-            if (allData && allData.length > 0) {
-                toggleSideNavigation(true);
-                // 初始化导航功能
-                initSideNavigation();
-            }
         }, 300);
         
     } catch (error) {
         alert(`处理文件时出错: ${error.message}`);
         console.error('文件处理错误:', error);
-        // 确保在出错时隐藏导航菜单
-        toggleSideNavigation(false);
     } finally {
         loadingElement.classList.add('hidden');
         uploadBtn.disabled = false;
@@ -1712,10 +1621,10 @@ function buildTeacherMapping(teacherData) {
         }
     }
     
-    // 查找主讲老师字段 - 更新字段名
+    // 查找主讲老师字段 - 扩展支持更多可能的字段名
     let teacherField = null;
     const teacherCandidates = [
-        '主讲老师姓名', '主讲老师', '主讲', '老师', '讲师', '主讲姓名', '教师', '授课老师',
+        '主讲老师', '主讲', '老师', '讲师', '主讲姓名', '教师', '授课老师',
         'teacher', 'Teacher', 'instructor', 'Instructor', 'lecturer', 'Lecturer',
         '主讲教师', '任课老师', '任课教师', '课程老师', '课程教师'
     ];
@@ -1728,86 +1637,18 @@ function buildTeacherMapping(teacherData) {
         }
     }
     
-    // 查找时间相关字段 - 支持新的三字段格式
-    let sessionDateField = null;
-    let sessionStartTimeField = null;
-    let sessionEndTimeField = null;
-    let sessionTimeField = null; // 兼容旧格式
-    
-    const sessionDateCandidates = ['真实上课日期', '上课日期', '课程日期', '日期'];
-    const sessionStartTimeCandidates = ['真实上课时间', '上课时间', '开始时间', '起始时间'];
-    const sessionEndTimeCandidates = ['真实下课时间', '下课时间', '结束时间', '终止时间'];
+    // 查找场次时间字段
+    let sessionTimeField = null;
     const sessionTimeCandidates = [
-        '场次时间', '开课时间', '课程时间',
+        '真实上课时间', '上课时间', '场次时间', '开课时间', '课程时间',
         'session_time', 'class_time', 'course_time', 'start_time', 'time',
-        '时间', '日期时间'
+        '时间', '日期时间', '开始时间'
     ];
     
-    // 查找新格式的三个字段
-    for (const candidate of sessionDateCandidates) {
+    for (const candidate of sessionTimeCandidates) {
         if (fields.includes(candidate)) {
-            sessionDateField = candidate;
-            console.log(`找到上课日期字段: ${candidate}`);
-            break;
-        }
-    }
-    
-    for (const candidate of sessionStartTimeCandidates) {
-        if (fields.includes(candidate)) {
-            sessionStartTimeField = candidate;
-            console.log(`找到上课时间字段: ${candidate}`);
-            break;
-        }
-    }
-    
-    for (const candidate of sessionEndTimeCandidates) {
-        if (fields.includes(candidate)) {
-            sessionEndTimeField = candidate;
-            console.log(`找到下课时间字段: ${candidate}`);
-            break;
-        }
-    }
-    
-    // 查找旧格式的单一时间字段（兼容性）
-    if (!sessionDateField || !sessionStartTimeField || !sessionEndTimeField) {
-        for (const candidate of sessionTimeCandidates) {
-            if (fields.includes(candidate)) {
-                sessionTimeField = candidate;
-                console.log(`找到场次时间字段（兼容格式）: ${candidate}`);
-                break;
-            }
-        }
-    }
-    
-    // 查找产品线、年级、学科字段
-    let productLineField = null;
-    let gradeField = null;
-    let subjectField = null;
-    
-    const productLineCandidates = ['课程名称', '产品线', '课程产品', '产品', '课程类型'];
-    const gradeCandidates = ['课程年级', '年级', '学段', '级别'];
-    const subjectCandidates = ['课程学科', '学科', '科目', '课程科目'];
-    
-    for (const candidate of productLineCandidates) {
-        if (fields.includes(candidate)) {
-            productLineField = candidate;
-            console.log(`找到产品线字段: ${candidate}`);
-            break;
-        }
-    }
-    
-    for (const candidate of gradeCandidates) {
-        if (fields.includes(candidate)) {
-            gradeField = candidate;
-            console.log(`找到年级字段: ${candidate}`);
-            break;
-        }
-    }
-    
-    for (const candidate of subjectCandidates) {
-        if (fields.includes(candidate)) {
-            subjectField = candidate;
-            console.log(`找到学科字段: ${candidate}`);
+            sessionTimeField = candidate;
+            console.log(`找到场次时间字段: ${candidate}`);
             break;
         }
     }
@@ -1835,76 +1676,12 @@ function buildTeacherMapping(teacherData) {
         }
     }
     
-    // 模糊匹配时间字段
-    if (!sessionDateField && !sessionTimeField) {
-        for (const field of fields) {
-            if (field.includes('日期') || field.toLowerCase().includes('date')) {
-                sessionDateField = field;
-                console.log(`模糊匹配到日期字段: ${field}`);
-                break;
-            }
-        }
-    }
-    
-    if (!sessionStartTimeField && !sessionTimeField) {
-        for (const field of fields) {
-            if ((field.includes('时间') || field.toLowerCase().includes('time')) && 
-                (field.includes('上课') || field.includes('开始') || field.includes('起始'))) {
-                sessionStartTimeField = field;
-                console.log(`模糊匹配到开始时间字段: ${field}`);
-                break;
-            }
-        }
-    }
-    
-    if (!sessionEndTimeField && !sessionTimeField) {
-        for (const field of fields) {
-            if ((field.includes('时间') || field.toLowerCase().includes('time')) && 
-                (field.includes('下课') || field.includes('结束') || field.includes('终止'))) {
-                sessionEndTimeField = field;
-                console.log(`模糊匹配到结束时间字段: ${field}`);
-                break;
-            }
-        }
-    }
-    
-    if (!sessionTimeField && !sessionDateField) {
+    if (!sessionTimeField) {
         for (const field of fields) {
             if (field.includes('时间') || field.includes('日期') ||
                 field.toLowerCase().includes('time') || field.toLowerCase().includes('date')) {
                 sessionTimeField = field;
                 console.log(`模糊匹配到场次时间字段: ${field}`);
-                break;
-            }
-        }
-    }
-    
-    // 模糊匹配产品线、年级、学科字段
-    if (!productLineField) {
-        for (const field of fields) {
-            if (field.includes('课程') || field.includes('产品') || field.includes('名称')) {
-                productLineField = field;
-                console.log(`模糊匹配到产品线字段: ${field}`);
-                break;
-            }
-        }
-    }
-    
-    if (!gradeField) {
-        for (const field of fields) {
-            if (field.includes('年级') || field.includes('学段') || field.includes('级别')) {
-                gradeField = field;
-                console.log(`模糊匹配到年级字段: ${field}`);
-                break;
-            }
-        }
-    }
-    
-    if (!subjectField) {
-        for (const field of fields) {
-            if (field.includes('学科') || field.includes('科目')) {
-                subjectField = field;
-                console.log(`模糊匹配到学科字段: ${field}`);
                 break;
             }
         }
@@ -1917,49 +1694,19 @@ function buildTeacherMapping(teacherData) {
         return mapping;
     }
     
-    console.log(`使用字段 - 场次ID: ${sessionIdField}, 主讲老师: ${teacherField}`);
-    console.log(`时间字段 - 日期: ${sessionDateField || '未找到'}, 开始时间: ${sessionStartTimeField || '未找到'}, 结束时间: ${sessionEndTimeField || '未找到'}, 兼容时间: ${sessionTimeField || '未找到'}`);
-    console.log(`扩展字段 - 产品线: ${productLineField || '未找到'}, 年级: ${gradeField || '未找到'}, 学科: ${subjectField || '未找到'}`);
+    console.log(`使用字段 - 场次ID: ${sessionIdField}, 主讲老师: ${teacherField}, 场次时间: ${sessionTimeField || '未找到'}`);
     
     // 构建映射关系
     let mappingCount = 0;
     teacherData.forEach((row, index) => {
         const sessionId = row[sessionIdField];
         const teacherInfo = row[teacherField];
-        
-        // 构建时间信息
-        let sessionTime = '';
-        if (sessionDateField && sessionStartTimeField && sessionEndTimeField) {
-            // 新格式：合并三个字段
-            const date = row[sessionDateField] || '';
-            const startTime = row[sessionStartTimeField] || '';
-            const endTime = row[sessionEndTimeField] || '';
-            if (date && startTime && endTime) {
-                sessionTime = `${date} ${startTime}~${endTime}`;
-            }
-        } else if (sessionTimeField) {
-            // 兼容旧格式
-            sessionTime = row[sessionTimeField] || '';
-        }
-        
-        // 获取扩展信息
-        const productLine = productLineField ? row[productLineField] : '';
-        const grade = gradeField ? row[gradeField] : '';
-        const subject = subjectField ? row[subjectField] : '';
+        const sessionTime = sessionTimeField ? row[sessionTimeField] : '';
         
         if (sessionId && teacherInfo) {
             // 清理场次ID（去除可能的空格和特殊字符）
             const cleanSessionId = String(sessionId).trim();
-            
-            // 构建完整的教师信息对象
-            const teacherData = {
-                name: teacherInfo,
-                productLine: productLine,
-                grade: grade,
-                subject: subject
-            };
-            
-            mapping[cleanSessionId] = teacherData;
+            mapping[cleanSessionId] = teacherInfo;
             
             // 构建场次时间映射
             if (sessionTime) {
@@ -1970,7 +1717,7 @@ function buildTeacherMapping(teacherData) {
             
             // 打印前几条映射关系用于调试
             if (index < 5) {
-                console.log(`映射关系 ${index + 1}: ${cleanSessionId} -> ${teacherInfo} [${productLine}|${grade}|${subject}] (${sessionTime || '无时间信息'})`);
+                console.log(`映射关系 ${index + 1}: ${cleanSessionId} -> ${teacherInfo} (${sessionTime || '无时间信息'})`);
             }
         }
     });
@@ -1978,7 +1725,7 @@ function buildTeacherMapping(teacherData) {
     console.log(`成功建立 ${mappingCount} 条主讲老师映射关系`);
     
     // 保存场次时间映射到全局变量
-    window.teacherSessionMapping = sessionMapping;
+    teacherSessionMapping = sessionMapping;
     
     return mapping;
 }
@@ -1987,50 +1734,13 @@ function buildTeacherMapping(teacherData) {
 function extractTeacherName(teacherInfo) {
     if (!teacherInfo) return '未知';
     
-    // 如果是新的对象格式
-    if (typeof teacherInfo === 'object' && teacherInfo.name) {
-        const name = teacherInfo.name;
-        // 处理格式：小王（123456）
-        const match = name.match(/^([^（(]+)/);
-        if (match) {
-            return match[1].trim();
-        }
-        return name.trim();
+    // 处理格式：小王（123456）
+    const match = teacherInfo.match(/^([^（(]+)/);
+    if (match) {
+        return match[1].trim();
     }
     
-    // 兼容旧的字符串格式
-    if (typeof teacherInfo === 'string') {
-        const match = teacherInfo.match(/^([^（(]+)/);
-        if (match) {
-            return match[1].trim();
-        }
-        return teacherInfo.trim();
-    }
-    
-    return '未知';
-}
-
-// 从主讲老师信息中提取完整信息
-function extractTeacherFullInfo(teacherInfo) {
-    if (!teacherInfo) return { name: '未知', productLine: '', grade: '', subject: '' };
-    
-    // 如果是新的对象格式
-    if (typeof teacherInfo === 'object' && teacherInfo.name) {
-        return {
-            name: extractTeacherName(teacherInfo),
-            productLine: teacherInfo.productLine || '',
-            grade: teacherInfo.grade || '',
-            subject: teacherInfo.subject || ''
-        };
-    }
-    
-    // 兼容旧的字符串格式
-    return {
-        name: extractTeacherName(teacherInfo),
-        productLine: '',
-        grade: '',
-        subject: ''
-    };
+    return teacherInfo.trim();
 }
 
 // 生成主讲老师分析
@@ -2073,8 +1783,7 @@ function generateTeacherAnalysis(data) {
         matchedCount++;
         
         const teacherInfo = teacherMapping[sessionId];
-        const teacherFullInfo = extractTeacherFullInfo(teacherInfo);
-        const teacherName = teacherFullInfo.name;
+        const teacherName = extractTeacherName(teacherInfo);
         const score = parseFloat(row.stu_score) || 0;
         const labels = row.label ? row.label.split(',').map(label => cleanLabel(label)) : [];
         
@@ -2085,9 +1794,6 @@ function generateTeacherAnalysis(data) {
                 fiveStarCount: 0,
                 oneStarCount: 0,
                 sessions: new Set(), // 记录该主讲老师的所有场次
-                productLine: teacherFullInfo.productLine,
-                grade: teacherFullInfo.grade,
-                subject: teacherFullInfo.subject,
                 labelCounts: {
                     '讲解很透彻': 0,
                     '非常幽默': 0,
@@ -2103,7 +1809,7 @@ function generateTeacherAnalysis(data) {
         if (!sessionStats[sessionId]) {
             sessionStats[sessionId] = {
                 teacherName: teacherName,
-                sessionTime: window.teacherSessionMapping[sessionId] || '',
+                sessionTime: teacherSessionMapping[sessionId] || '',
                 totalCount: 0,
                 fiveStarCount: 0,
                 oneStarCount: 0,
@@ -2225,8 +1931,25 @@ function generateTeacherAnalysis(data) {
         const teacherSessions = Array.from(stats.sessions);
         const sessionCount = teacherSessions.length;
         
-        // 为每个场次生成一行数据
-        teacherSessions.forEach((sessionId, index) => {
+        // 第一行显示主讲老师的汇总数据
+        html += `
+            <tr>
+                <td class="teacher-name-cell" rowspan="${sessionCount + 1}">${name}</td>
+                <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}">${fiveStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}">${labelRates['非常幽默'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
+                <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}">${oneStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}">${labelRates['讲解混乱'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}">${labelRates['有点无聊'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
+                <td class="session-cell" colspan="2">汇总数据</td>
+                <td class="rate-cell" colspan="8">X%</td>
+            </tr>
+        `;
+        
+        // 为每个场次添加一行数据
+        teacherSessions.forEach(sessionId => {
             const sessionStat = sessionStats[sessionId];
             const sessionFiveStarRate = sessionStat.totalCount > 0 ? (sessionStat.fiveStarCount / sessionStat.totalCount * 100) : 0;
             const sessionOneStarRate = sessionStat.totalCount > 0 ? (sessionStat.oneStarCount / sessionStat.totalCount * 100) : 0;
@@ -2236,38 +1959,9 @@ function generateTeacherAnalysis(data) {
                 sessionLabelRates[label] = sessionStat.totalCount > 0 ? (sessionStat.labelCounts[label] / sessionStat.totalCount * 100) : 0;
             });
             
-            if (index === 0) {
-                // 第一行：显示主讲老师汇总数据 + 第一个场次数据
-                html += `
-                <tr>
-                    <td class="teacher-name-cell" rowspan="${sessionCount}">${name}</td>
-                    <td class="product-line-cell" rowspan="${sessionCount}">${stats.productLine || '-'}</td>
-                    <td class="grade-cell" rowspan="${sessionCount}">${stats.grade || '-'}</td>
-                    <td class="subject-cell" rowspan="${sessionCount}">${stats.subject || '-'}</td>
-                    <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${fiveStarRate.toFixed(1)}%</td>
-                    <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
-                    <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['非常幽默'].toFixed(1)}%</td>
-                    <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
-                    <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${oneStarRate.toFixed(1)}%</td>
-                    <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解混乱'].toFixed(1)}%</td>
-                    <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['有点无聊'].toFixed(1)}%</td>
-                    <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
-                    <td class="session-cell">${sessionId}</td>
-                    <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
-                    <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
-                    <td class="rate-cell">${sessionLabelRates['讲解很透彻'].toFixed(1)}%</td>
-                    <td class="rate-cell">${sessionLabelRates['非常幽默'].toFixed(1)}%</td>
-                    <td class="rate-cell">${sessionLabelRates['从来不拖堂'].toFixed(1)}%</td>
-                    <td class="rate-cell">${sessionOneStarRate.toFixed(1)}%</td>
-                    <td class="rate-cell">${sessionLabelRates['讲解混乱'].toFixed(1)}%</td>
-                    <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
-                    <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
-                </tr>
-                `;
-            } else {
-                // 其他场次行：只显示场次数据
-                html += `
+            html += `
                 <tr class="session-row">
+                    <td class="session-cell" colspan="9"></td>
                     <td class="session-cell">${sessionId}</td>
                     <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
                     <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
@@ -2279,8 +1973,7 @@ function generateTeacherAnalysis(data) {
                     <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
                     <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
                 </tr>
-                `;
-            }
+            `;
         });
     });
     
@@ -2288,9 +1981,6 @@ function generateTeacherAnalysis(data) {
     html += `
         <tr class="average-row">
             <td class="teacher-name-cell">该讲次主讲平均值</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
             <td class="rate-cell">${averageStats.fiveStarRate.toFixed(1)}%</td>
             <td class="rate-cell">${averageStats.labelRates['讲解很透彻'].toFixed(1)}%</td>
             <td class="rate-cell">${averageStats.labelRates['非常幽默'].toFixed(1)}%</td>
@@ -2299,16 +1989,6 @@ function generateTeacherAnalysis(data) {
             <td class="rate-cell">${averageStats.labelRates['讲解混乱'].toFixed(1)}%</td>
             <td class="rate-cell">${averageStats.labelRates['有点无聊'].toFixed(1)}%</td>
             <td class="rate-cell">${averageStats.labelRates['每次都拖堂'].toFixed(1)}%</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
         </tr>
     `;
     
@@ -2320,125 +2000,38 @@ function generateTeacherAnalysis(data) {
     teacherAverageStats = averageStats;
     sessionStatsData = sessionStats;
     
-    // 填充筛选下拉框
-    populateTeacherFilters(teacherNames, teacherStats);
+    // 填充主讲姓名筛选下拉框
+    populateTeacherNameFilter(teacherNames);
     
     teacherStatsBody.innerHTML = html;
 }
 
-// 填充主讲老师筛选下拉框
-function populateTeacherFilters(teacherNames, teacherStats) {
-    // 填充主讲姓名筛选下拉框
-    if (teacherNameFilter) {
-        teacherNameFilter.innerHTML = '<option value="all">全部主讲老师</option>';
-        teacherNames.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            teacherNameFilter.appendChild(option);
-        });
-    }
+// 填充主讲姓名筛选下拉框
+function populateTeacherNameFilter(teacherNames) {
+    if (!teacherNameFilter) return;
     
-    // 收集所有唯一的产品线、年级、学科
-    const productLines = new Set();
-    const grades = new Set();
-    const subjects = new Set();
+    // 清空下拉框
+    teacherNameFilter.innerHTML = '<option value="all">全部主讲老师</option>';
     
-    Object.values(teacherStats).forEach(stats => {
-        if (stats.productLine) productLines.add(stats.productLine);
-        if (stats.grade) grades.add(stats.grade);
-        if (stats.subject) subjects.add(stats.subject);
+    // 添加每个主讲老师
+    teacherNames.forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        teacherNameFilter.appendChild(option);
     });
-    
-    // 保存产品线数据用于搜索提示
-    window.allProductLines = Array.from(productLines).sort();
-    
-    // 填充年级筛选下拉框
-    if (teacherGradeFilter) {
-        teacherGradeFilter.innerHTML = '<option value="all">全部年级</option>';
-        Array.from(grades).sort().forEach(grade => {
-            const option = document.createElement('option');
-            option.value = grade;
-            option.textContent = grade;
-            teacherGradeFilter.appendChild(option);
-        });
-    }
-    
-    // 填充学科筛选下拉框
-    if (teacherSubjectFilter) {
-        teacherSubjectFilter.innerHTML = '<option value="all">全部学科</option>';
-        Array.from(subjects).sort().forEach(subject => {
-            const option = document.createElement('option');
-            option.value = subject;
-            option.textContent = subject;
-            teacherSubjectFilter.appendChild(option);
-        });
-    }
-    
-    // 保存原始产品线列表用于搜索
-    window.allProductLines = Array.from(productLines).sort();
-    
-    // 初始化清除按钮的显示状态
-    if (teacherProductLineSearch && clearProductLineBtn) {
-        updateClearButtonVisibility(teacherProductLineSearch, clearProductLineBtn);
-    }
-    if (teacherSessionSearch && clearSessionBtn) {
-        updateClearButtonVisibility(teacherSessionSearch, clearSessionBtn);
-    }
 }
-
-
 
 // 应用主讲老师筛选和排序
 function applyTeacherFilters() {
     const nameFilter = teacherNameFilter.value;
-    const productLineSearchText = teacherProductLineSearch ? teacherProductLineSearch.value.toLowerCase().trim() : '';
-    const gradeFilter = teacherGradeFilter ? teacherGradeFilter.value : 'all';
-    const subjectFilter = teacherSubjectFilter ? teacherSubjectFilter.value : 'all';
-    const sessionSearchText = teacherSessionSearch ? teacherSessionSearch.value.toLowerCase().trim() : '';
     const sortField = teacherSortField.value;
     const sortOrder = teacherSortOrder.value;
     
     // 筛选数据
     let filteredTeachers = Object.keys(teacherStatsData);
-    
     if (nameFilter !== 'all') {
         filteredTeachers = filteredTeachers.filter(name => name === nameFilter);
-    }
-    
-    if (productLineSearchText) {
-        filteredTeachers = filteredTeachers.filter(name => {
-            const stats = teacherStatsData[name];
-            return stats.productLine && stats.productLine.toLowerCase().includes(productLineSearchText);
-        });
-    }
-    
-    if (gradeFilter !== 'all') {
-        filteredTeachers = filteredTeachers.filter(name => {
-            const stats = teacherStatsData[name];
-            return stats.grade === gradeFilter;
-        });
-    }
-    
-    if (subjectFilter !== 'all') {
-        filteredTeachers = filteredTeachers.filter(name => {
-            const stats = teacherStatsData[name];
-            return stats.subject === subjectFilter;
-        });
-    }
-    
-    // 场次ID搜索筛选
-    if (sessionSearchText) {
-        filteredTeachers = filteredTeachers.filter(name => {
-            const stats = teacherStatsData[name];
-            // 检查该主讲老师的所有场次中是否有匹配的场次ID
-            if (stats.sessions) {
-                return Array.from(stats.sessions).some(sessionId => 
-                    sessionId.toLowerCase().includes(sessionSearchText)
-                );
-            }
-            return false;
-        });
     }
     
     // 排序数据
@@ -2490,7 +2083,6 @@ function applyTeacherFilters() {
 // 生成筛选后的主讲老师表格
 function generateFilteredTeacherTable(filteredTeachers) {
     const teacherStatsBody = document.getElementById('teacher-stats-body');
-    const sessionSearchText = teacherSessionSearch ? teacherSessionSearch.value.toLowerCase().trim() : '';
     
     let html = '';
     
@@ -2514,17 +2106,29 @@ function generateFilteredTeacherTable(filteredTeachers) {
             labelAboveAvg[label] = labelRates[label] > teacherAverageStats.labelRates[label];
         });
         
-        // 获取该主讲老师的所有场次，如果有场次ID搜索则只显示匹配的场次
-        let teacherSessions = Array.from(stats.sessions || []);
-        if (sessionSearchText) {
-            teacherSessions = teacherSessions.filter(sessionId => 
-                sessionId.toLowerCase().includes(sessionSearchText)
-            );
-        }
+        // 获取该主讲老师的所有场次
+        const teacherSessions = Array.from(stats.sessions || []);
         const sessionCount = teacherSessions.length;
         
-        // 为每个场次生成一行数据
-        teacherSessions.forEach((sessionId, index) => {
+        // 第一行显示主讲老师的汇总数据
+        html += `
+            <tr>
+                <td class="teacher-name-cell" rowspan="${sessionCount + 1}">${name}</td>
+                <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}">${fiveStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}">${labelRates['非常幽默'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
+                <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}">${oneStarRate.toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}">${labelRates['讲解混乱'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}">${labelRates['有点无聊'].toFixed(1)}%</td>
+                <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
+                <td class="session-cell" colspan="2">汇总数据</td>
+                <td class="rate-cell" colspan="8">X%</td>
+            </tr>
+        `;
+        
+        // 为每个场次添加一行数据
+        teacherSessions.forEach(sessionId => {
             const sessionStat = sessionStatsData[sessionId];
             if (sessionStat) {
                 const sessionFiveStarRate = sessionStat.totalCount > 0 ? (sessionStat.fiveStarCount / sessionStat.totalCount * 100) : 0;
@@ -2535,38 +2139,9 @@ function generateFilteredTeacherTable(filteredTeachers) {
                     sessionLabelRates[label] = sessionStat.totalCount > 0 ? (sessionStat.labelCounts[label] / sessionStat.totalCount * 100) : 0;
                 });
                 
-                if (index === 0) {
-                    // 第一行：显示主讲老师汇总数据 + 第一个场次数据
-                    html += `
-                    <tr>
-                        <td class="teacher-name-cell" rowspan="${sessionCount}">${name}</td>
-                        <td class="product-line-cell" rowspan="${sessionCount}">${stats.productLine || '-'}</td>
-                        <td class="grade-cell" rowspan="${sessionCount}">${stats.grade || '-'}</td>
-                        <td class="subject-cell" rowspan="${sessionCount}">${stats.subject || '-'}</td>
-                        <td class="rate-cell five-star-rate ${fiveStarAboveAvg ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${fiveStarRate.toFixed(1)}%</td>
-                        <td class="rate-cell ${labelAboveAvg['讲解很透彻'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解很透彻'].toFixed(1)}%</td>
-                        <td class="rate-cell ${labelAboveAvg['非常幽默'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['非常幽默'].toFixed(1)}%</td>
-                        <td class="rate-cell ${labelAboveAvg['从来不拖堂'] ? 'above-average-five-star' : ''}" rowspan="${sessionCount}">${labelRates['从来不拖堂'].toFixed(1)}%</td>
-                        <td class="rate-cell one-star-rate ${oneStarAboveAvg ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${oneStarRate.toFixed(1)}%</td>
-                        <td class="rate-cell ${labelAboveAvg['讲解混乱'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['讲解混乱'].toFixed(1)}%</td>
-                        <td class="rate-cell ${labelAboveAvg['有点无聊'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['有点无聊'].toFixed(1)}%</td>
-                        <td class="rate-cell ${labelAboveAvg['每次都拖堂'] ? 'above-average-one-star' : ''}" rowspan="${sessionCount}">${labelRates['每次都拖堂'].toFixed(1)}%</td>
-                        <td class="session-cell">${sessionId}</td>
-                        <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
-                        <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
-                        <td class="rate-cell">${sessionLabelRates['讲解很透彻'].toFixed(1)}%</td>
-                        <td class="rate-cell">${sessionLabelRates['非常幽默'].toFixed(1)}%</td>
-                        <td class="rate-cell">${sessionLabelRates['从来不拖堂'].toFixed(1)}%</td>
-                        <td class="rate-cell">${sessionOneStarRate.toFixed(1)}%</td>
-                        <td class="rate-cell">${sessionLabelRates['讲解混乱'].toFixed(1)}%</td>
-                        <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
-                        <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
-                    </tr>
-                    `;
-                } else {
-                    // 其他场次行：只显示场次数据
-                    html += `
+                html += `
                     <tr class="session-row">
+                        <td class="session-cell" colspan="9"></td>
                         <td class="session-cell">${sessionId}</td>
                         <td class="session-time-cell">${sessionStat.sessionTime || '未知'}</td>
                         <td class="rate-cell">${sessionFiveStarRate.toFixed(1)}%</td>
@@ -2578,8 +2153,7 @@ function generateFilteredTeacherTable(filteredTeachers) {
                         <td class="rate-cell">${sessionLabelRates['有点无聊'].toFixed(1)}%</td>
                         <td class="rate-cell">${sessionLabelRates['每次都拖堂'].toFixed(1)}%</td>
                     </tr>
-                    `;
-                }
+                `;
             }
         });
     });
@@ -2588,9 +2162,6 @@ function generateFilteredTeacherTable(filteredTeachers) {
     html += `
         <tr class="average-row">
             <td class="teacher-name-cell">该讲次主讲平均值</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
             <td class="rate-cell">${teacherAverageStats.fiveStarRate.toFixed(1)}%</td>
             <td class="rate-cell">${teacherAverageStats.labelRates['讲解很透彻'].toFixed(1)}%</td>
             <td class="rate-cell">${teacherAverageStats.labelRates['非常幽默'].toFixed(1)}%</td>
@@ -2599,97 +2170,8 @@ function generateFilteredTeacherTable(filteredTeachers) {
             <td class="rate-cell">${teacherAverageStats.labelRates['讲解混乱'].toFixed(1)}%</td>
             <td class="rate-cell">${teacherAverageStats.labelRates['有点无聊'].toFixed(1)}%</td>
             <td class="rate-cell">${teacherAverageStats.labelRates['每次都拖堂'].toFixed(1)}%</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
-            <td class="rate-cell">-</td>
         </tr>
     `;
     
     teacherStatsBody.innerHTML = html;
 } 
-
-// 左侧导航菜单功能
-function initSideNavigation() {
-    const sideNav = document.getElementById('side-nav');
-    const navItems = document.querySelectorAll('.nav-item');
-    
-    // 点击导航项时定位到对应模块
-    navItems.forEach(item => {
-        item.addEventListener('click', function() {
-            const targetId = this.getAttribute('data-target');
-            const targetElement = document.getElementById(targetId);
-            
-            if (targetElement && !targetElement.classList.contains('hidden')) {
-                // 移除所有激活状态
-                navItems.forEach(nav => nav.classList.remove('active'));
-                // 添加当前激活状态
-                this.classList.add('active');
-                
-                // 平滑滚动到目标元素
-                targetElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-            }
-        });
-    });
-    
-    // 监听滚动事件，自动高亮当前可见的模块
-    let ticking = false;
-    function updateActiveNav() {
-        if (!ticking) {
-            requestAnimationFrame(() => {
-                const sections = ['dashboard', 'teacher-analysis', 'comments-section', 'detailed-data'];
-                let currentSection = '';
-                
-                sections.forEach(sectionId => {
-                    const element = document.getElementById(sectionId);
-                    if (element && !element.classList.contains('hidden')) {
-                        const rect = element.getBoundingClientRect();
-                        if (rect.top <= window.innerHeight / 2 && rect.bottom >= window.innerHeight / 2) {
-                            currentSection = sectionId;
-                        }
-                    }
-                });
-                
-                // 更新激活状态
-                navItems.forEach(item => {
-                    const targetId = item.getAttribute('data-target');
-                    if (targetId === currentSection) {
-                        item.classList.add('active');
-                    } else {
-                        item.classList.remove('active');
-                    }
-                });
-                
-                ticking = false;
-            });
-            ticking = true;
-        }
-    }
-    
-    window.addEventListener('scroll', updateActiveNav);
-    
-    return sideNav;
-}
-
-// 显示/隐藏导航菜单
-function toggleSideNavigation(show) {
-    const sideNav = document.getElementById('side-nav');
-    const body = document.body;
-    
-    if (show) {
-        sideNav.classList.remove('hidden');
-        body.classList.add('nav-active');
-    } else {
-        sideNav.classList.add('hidden');
-        body.classList.remove('nav-active');
-    }
-}

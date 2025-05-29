@@ -116,6 +116,34 @@
             </button>
         </div>
         
+        <!-- 左侧导航菜单 -->
+        <div id="side-nav" class="side-nav hidden">
+            <div class="nav-item" data-target="dashboard" title="数据看板">
+                <div class="nav-circle">
+                    <i class="bi bi-bar-chart-fill"></i>
+                </div>
+                <div class="nav-label">数据看板</div>
+            </div>
+            <div class="nav-item" data-target="teacher-analysis" title="主讲老师分析">
+                <div class="nav-circle">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <div class="nav-label">主讲老师分析</div>
+            </div>
+            <div class="nav-item" data-target="comments-section" title="学生评价内容">
+                <div class="nav-circle">
+                    <i class="bi bi-chat-dots-fill"></i>
+                </div>
+                <div class="nav-label">学生评价内容</div>
+            </div>
+            <div class="nav-item" data-target="detailed-data" title="详细数据">
+                <div class="nav-circle">
+                    <i class="bi bi-table"></i>
+                </div>
+                <div class="nav-label">详细数据</div>
+            </div>
+        </div>
+        
         <section id="dashboard" class="dashboard hidden">
             <h2>数据看板</h2>
             
@@ -155,6 +183,10 @@
         <!-- 主讲老师分析模块 -->
         <section id="teacher-analysis" class="teacher-analysis hidden">
             <h2>主讲老师分析</h2>
+            <!-- <div class="filter-tip">
+                <i class="bi bi-info-circle"></i>
+                <span>筛选条件会自动应用，无需手动点击按钮</span>
+            </div> -->
             
             <!-- 筛选和排序控件 -->
             <div class="teacher-controls">
@@ -163,6 +195,32 @@
                     <select id="teacher-name-filter">
                         <option value="all">全部主讲老师</option>
                     </select>
+                </div>
+                <div class="control-group">
+                    <label for="teacher-product-line-search">产品线筛选：</label>
+                    <div class="product-line-filter-container">
+                        <input type="text" id="teacher-product-line-search" placeholder="输入产品线关键词筛选" class="product-line-search">
+                        <button type="button" id="clear-product-line" class="clear-btn" title="清空产品线筛选">×</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="teacher-grade-filter">年级筛选：</label>
+                    <select id="teacher-grade-filter">
+                        <option value="all">全部年级</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="teacher-subject-filter">学科筛选：</label>
+                    <select id="teacher-subject-filter">
+                        <option value="all">全部学科</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="teacher-session-search">场次ID搜索：</label>
+                    <div class="session-search-container">
+                        <input type="text" id="teacher-session-search" placeholder="输入场次ID搜索" class="session-search">
+                        <button type="button" id="clear-session" class="clear-btn" title="清空场次ID搜索">×</button>
+                    </div>
                 </div>
                 <div class="control-group">
                     <label for="teacher-sort-field">排序字段：</label>
@@ -180,11 +238,10 @@
                 <div class="control-group">
                     <label for="teacher-sort-order">排序方式：</label>
                     <select id="teacher-sort-order">
-                        <option value="desc">降序（高到低）</option>
-                        <option value="asc">升序（低到高）</option>
+                        <option value="desc">降序</option>
+                        <option value="asc">升序</option>
                     </select>
                 </div>
-                <button id="teacher-apply-filter" class="filter-btn">应用筛选</button>
             </div>
             
             <div class="teacher-analysis-container">
@@ -193,6 +250,9 @@
                         <thead>
                             <tr>
                                 <th class="teacher-name-header">主讲姓名</th>
+                                <th class="product-line-header">产品线</th>
+                                <th class="grade-header">年级</th>
+                                <th class="subject-header">学科</th>
                                 <th class="five-star-header">五星率</th>
                                 <th class="sub-header">讲清楚</th>
                                 <th class="sub-header">吸引人</th>
