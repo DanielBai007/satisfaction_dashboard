@@ -77,7 +77,8 @@
                             <i class="bi bi-cloud-arrow-up upload-icon"></i>
                             <div class="upload-text">
                                 <p>拖拽主讲老师信息文件到此处或点击选择文件</p>
-                                <p class="upload-hint">支持 .xlsx, .xls, .csv 格式，包含场次ID和主讲老师列</p>
+                                <p>文件获取方式：供应链-课程管理-课程列表-下载数据-课程场次</p>
+                                <p class="upload-hint">支持 .xlsx, .xls, .csv 格式</p>
                             </div>
                             <input type="file" id="teacher-file-upload" accept=".xlsx,.xls,.csv">
                         </div>
@@ -242,6 +243,12 @@
                         <option value="asc">升序</option>
                     </select>
                 </div>
+                <div class="control-group">
+                    <button id="teacher-reset-filters" class="reset-btn">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        重置筛选
+                    </button>
+                </div>
             </div>
             
             <div class="teacher-analysis-container">
@@ -283,28 +290,73 @@
         
         <section id="comments-section" class="comments-section hidden">
             <h2>学生评价内容</h2>
-            <div class="comments-container">
-                <div class="comments-controls">
-                    <div class="filter-item">
-                        <label for="comments-score-filter">评分筛选:</label>
-                        <select id="comments-score-filter">
-                            <option value="all">全部</option>
-                            <option value="5">5分</option>
-                            <option value="4">4分</option>
-                            <option value="3">3分</option>
-                            <option value="2">2分</option>
-                            <option value="1">1分</option>
-                        </select>
-                    </div>
-                    <div class="filter-item">
-                        <label for="comments-label-filter">标签筛选:</label>
-                        <select id="comments-label-filter">
-                            <option value="all">全部标签</option>
-                        </select>
-                    </div>
-                    <button id="comments-filter-btn">筛选</button>
+            
+            <!-- 筛选控件 -->
+            <div class="teacher-controls">
+                <div class="control-group">
+                    <label for="comments-teacher-name-filter">主讲姓名筛选：</label>
+                    <select id="comments-teacher-name-filter">
+                        <option value="all">全部主讲老师</option>
+                    </select>
                 </div>
-                
+                <div class="control-group">
+                    <label for="comments-product-line-search">产品线筛选：</label>
+                    <div class="product-line-filter-container">
+                        <input type="text" id="comments-product-line-search" placeholder="输入产品线关键词筛选" class="product-line-search">
+                        <button type="button" id="comments-clear-product-line" class="clear-btn" title="清空产品线筛选">×</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="comments-grade-filter">年级筛选：</label>
+                    <select id="comments-grade-filter">
+                        <option value="all">全部年级</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="comments-subject-filter">学科筛选：</label>
+                    <select id="comments-subject-filter">
+                        <option value="all">全部学科</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="comments-session-search">场次ID搜索：</label>
+                    <div class="session-search-container">
+                        <input type="text" id="comments-session-search" placeholder="输入场次ID搜索" class="session-search">
+                        <button type="button" id="comments-clear-session" class="clear-btn" title="清空场次ID搜索">×</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="comments-score-filter">评分筛选：</label>
+                    <select id="comments-score-filter">
+                        <option value="all">全部</option>
+                        <option value="5">5分</option>
+                        <option value="4">4分</option>
+                        <option value="3">3分</option>
+                        <option value="2">2分</option>
+                        <option value="1">1分</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="comments-label-filter">标签筛选：</label>
+                    <select id="comments-label-filter">
+                        <option value="all">全部标签</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <button id="comments-export-btn" class="secondary-btn">
+                        <i class="bi bi-download"></i>
+                        导出Excel
+                    </button>
+                </div>
+                <div class="control-group">
+                    <button id="comments-reset-filters" class="reset-btn">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        重置筛选
+                    </button>
+                </div>
+            </div>
+            
+            <div class="comments-container">
                 <div id="comments-list" class="comments-list">
                     <!-- 评价内容将在这里动态生成 -->
                 </div>

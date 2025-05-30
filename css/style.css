@@ -212,6 +212,42 @@ header {
     background-color: #d5dbdb;
 }
 
+.secondary-btn i {
+    margin-right: 5px;
+}
+
+.reset-btn {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    height: fit-content;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+}
+
+.reset-btn:hover {
+    background: linear-gradient(135deg, #ee5a52 0%, #dc3545 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
+}
+
+.reset-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(255, 107, 107, 0.3);
+}
+
+.reset-btn i {
+    font-size: 16px;
+}
+
 .icon-btn {
     background: none;
     border: none;
@@ -413,15 +449,6 @@ header {
     margin-bottom: 30px;
 }
 
-.comments-controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 15px;
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #eaeaea;
-}
-
 .comments-list {
     margin-bottom: 20px;
 }
@@ -444,9 +471,12 @@ header {
 .comment-header {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 12px;
     padding-bottom: 12px;
     border-bottom: 1px solid #eee;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .comment-info {
@@ -454,6 +484,8 @@ header {
     flex-wrap: wrap;
     gap: 12px;
     align-items: center;
+    flex: 1;
+    min-width: 300px;
 }
 
 .comment-info span {
@@ -464,6 +496,76 @@ header {
 .comment-info .comment-score {
     font-weight: bold;
     color: #3498db;
+}
+
+/* 新增标签容器样式 */
+.comment-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 5px;
+}
+
+/* 基础标签样式 */
+.comment-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 主讲老师标签 */
+.teacher-tag {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: 1px solid #5a67d8;
+}
+
+.teacher-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+/* 年级标签 */
+.grade-tag {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border: 1px solid #3182ce;
+}
+
+.grade-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(79, 172, 254, 0.3);
+}
+
+/* 学科标签 */
+.subject-tag {
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b35 100%);
+    color: white;
+    border: 1px solid #e67e22;
+}
+
+.subject-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 149, 0, 0.3);
+}
+
+/* 产品线标签 */
+.product-tag {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: 1px solid #e53e3e;
+}
+
+.product-tag:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(240, 147, 251, 0.3);
 }
 
 .comment-labels {
@@ -496,6 +598,12 @@ header {
     margin-top: 15px;
     font-size: 12px;
     color: #95a5a6;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.comment-meta span {
+    white-space: nowrap;
 }
 
 .no-data {
@@ -1200,5 +1308,37 @@ button:hover {
         left: 50px;
         font-size: 12px;
         padding: 6px 10px;
+    }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .comment-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .comment-info {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .comment-tags {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    .comment-tag {
+        font-size: 11px;
+        padding: 3px 8px;
+    }
+    
+    .comment-meta {
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .comment-meta span {
+        white-space: normal;
     }
 } 

@@ -111,6 +111,16 @@ const commentsPrevPageBtn = document.getElementById('comments-prev-page');
 const commentsNextPageBtn = document.getElementById('comments-next-page');
 const commentsPageInfoElement = document.getElementById('comments-page-info');
 
+// 学员评价内容筛选控件DOM元素
+const commentsTeacherNameFilter = document.getElementById('comments-teacher-name-filter');
+const commentsProductLineSearch = document.getElementById('comments-product-line-search');
+const commentsClearProductLineBtn = document.getElementById('comments-clear-product-line');
+const commentsGradeFilter = document.getElementById('comments-grade-filter');
+const commentsSubjectFilter = document.getElementById('comments-subject-filter');
+const commentsSessionSearch = document.getElementById('comments-session-search');
+const commentsClearSessionBtn = document.getElementById('comments-clear-session');
+const commentsExportBtn = document.getElementById('comments-export-btn');
+
 // 主讲老师分析控件DOM元素
 const teacherNameFilter = document.getElementById('teacher-name-filter');
 const teacherProductLineSearch = document.getElementById('teacher-product-line-search');
@@ -122,10 +132,12 @@ const clearSessionBtn = document.getElementById('clear-session');
 const teacherSortField = document.getElementById('teacher-sort-field');
 const teacherSortOrder = document.getElementById('teacher-sort-order');
 const teacherApplyFilter = document.getElementById('teacher-apply-filter');
+const teacherResetFilters = document.getElementById('teacher-reset-filters');
 
 // 评价内容分页
 let commentsCurrentPage = 1;
 let filteredComments = [];
+const commentsResetFilters = document.getElementById('comments-reset-filters');
 
 // 图表实例
 let scoreChart;
@@ -281,6 +293,18 @@ function initEventListeners() {
     if (commentsScoreFilterElement) {
         commentsScoreFilterElement.addEventListener('change', () => {
             updateLabelFilterByScore(commentsScoreFilterElement.value, commentsLabelFilterElement);
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+    }
+    
+    // 标签筛选 - 评价内容
+    if (commentsLabelFilterElement) {
+        commentsLabelFilterElement.addEventListener('change', () => {
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
         });
     }
     
@@ -348,6 +372,94 @@ function initEventListeners() {
             updateClearButtonVisibility(teacherSessionSearch, clearSessionBtn);
             applyTeacherFilters();
         });
+    }
+    
+    // 学员评价内容模块的筛选控件事件监听器
+    if (commentsTeacherNameFilter) {
+        commentsTeacherNameFilter.addEventListener('change', () => {
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+    }
+    
+    if (commentsGradeFilter) {
+        commentsGradeFilter.addEventListener('change', () => {
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+    }
+    
+    if (commentsSubjectFilter) {
+        commentsSubjectFilter.addEventListener('change', () => {
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+    }
+    
+    // 学员评价内容产品线搜索功能
+    if (commentsProductLineSearch) {
+        commentsProductLineSearch.addEventListener('input', () => {
+            updateClearButtonVisibility(commentsProductLineSearch, commentsClearProductLineBtn);
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+        
+        // 初始化清除按钮显示状态
+        updateClearButtonVisibility(commentsProductLineSearch, commentsClearProductLineBtn);
+    }
+    
+    // 清空学员评价内容产品线搜索
+    if (commentsClearProductLineBtn) {
+        commentsClearProductLineBtn.addEventListener('click', () => {
+            commentsProductLineSearch.value = '';
+            updateClearButtonVisibility(commentsProductLineSearch, commentsClearProductLineBtn);
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+    }
+    
+    // 学员评价内容场次ID搜索功能
+    if (commentsSessionSearch) {
+        commentsSessionSearch.addEventListener('input', () => {
+            updateClearButtonVisibility(commentsSessionSearch, commentsClearSessionBtn);
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+        
+        // 初始化清除按钮显示状态
+        updateClearButtonVisibility(commentsSessionSearch, commentsClearSessionBtn);
+    }
+    
+    // 清空学员评价内容场次ID搜索
+    if (commentsClearSessionBtn) {
+        commentsClearSessionBtn.addEventListener('click', () => {
+            commentsSessionSearch.value = '';
+            updateClearButtonVisibility(commentsSessionSearch, commentsClearSessionBtn);
+            applyCommentsFilters();
+            commentsCurrentPage = 1;
+            displayComments();
+        });
+    }
+    
+    // 学员评价内容导出功能
+    if (commentsExportBtn) {
+        commentsExportBtn.addEventListener('click', exportCommentsToExcel);
+    }
+    
+    // 主讲老师分析重置筛选按钮
+    if (teacherResetFilters) {
+        teacherResetFilters.addEventListener('click', resetTeacherFilters);
+    }
+    
+    // 学生评价内容重置筛选按钮
+    if (commentsResetFilters) {
+        commentsResetFilters.addEventListener('click', resetCommentsFilters);
     }
 }
 
@@ -1501,10 +1613,72 @@ function populateCommentsLabelFilter(labels) {
     });
 }
 
+// 填充学员评价内容模块的筛选控件
+function populateCommentsFilters(teacherNames, teacherStats) {
+    // 填充主讲姓名筛选下拉框
+    if (commentsTeacherNameFilter) {
+        commentsTeacherNameFilter.innerHTML = '<option value="all">全部主讲老师</option>';
+        teacherNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            commentsTeacherNameFilter.appendChild(option);
+        });
+    }
+    
+    // 收集所有唯一的产品线、年级、学科
+    const productLines = new Set();
+    const grades = new Set();
+    const subjects = new Set();
+    
+    Object.values(teacherStats).forEach(stats => {
+        if (stats.productLine) productLines.add(stats.productLine);
+        if (stats.grade) grades.add(stats.grade);
+        if (stats.subject) subjects.add(stats.subject);
+    });
+    
+    // 填充年级筛选下拉框
+    if (commentsGradeFilter) {
+        commentsGradeFilter.innerHTML = '<option value="all">全部年级</option>';
+        Array.from(grades).sort().forEach(grade => {
+            const option = document.createElement('option');
+            option.value = grade;
+            option.textContent = grade;
+            commentsGradeFilter.appendChild(option);
+        });
+    }
+    
+    // 填充学科筛选下拉框
+    if (commentsSubjectFilter) {
+        commentsSubjectFilter.innerHTML = '<option value="all">全部学科</option>';
+        Array.from(subjects).sort().forEach(subject => {
+            const option = document.createElement('option');
+            option.value = subject;
+            option.textContent = subject;
+            commentsSubjectFilter.appendChild(option);
+        });
+    }
+    
+    // 初始化清除按钮的显示状态
+    if (commentsProductLineSearch && commentsClearProductLineBtn) {
+        updateClearButtonVisibility(commentsProductLineSearch, commentsClearProductLineBtn);
+    }
+    if (commentsSessionSearch && commentsClearSessionBtn) {
+        updateClearButtonVisibility(commentsSessionSearch, commentsClearSessionBtn);
+    }
+}
+
 // 应用评价内容筛选条件
 function applyCommentsFilters() {
     const scoreFilter = commentsScoreFilterElement.value;
     const labelFilter = commentsLabelFilterElement.value;
+    
+    // 新增的筛选条件
+    const teacherNameFilter = commentsTeacherNameFilter ? commentsTeacherNameFilter.value : 'all';
+    const productLineSearchText = commentsProductLineSearch ? commentsProductLineSearch.value.toLowerCase().trim() : '';
+    const gradeFilter = commentsGradeFilter ? commentsGradeFilter.value : 'all';
+    const subjectFilter = commentsSubjectFilter ? commentsSubjectFilter.value : 'all';
+    const sessionSearchText = commentsSessionSearch ? commentsSessionSearch.value.toLowerCase().trim() : '';
     
     filteredComments = allData.filter(row => {
         // 必须是有效内容
@@ -1540,6 +1714,70 @@ function applyCommentsFilters() {
                 if (!validLabelsForScore.includes(labelFilter)) {
                     return false;
                 }
+            }
+        }
+        
+        // 获取场次ID（支持多种字段名）
+        let sessionId = null;
+        for (const field of fieldMapping.sessionIdFields) {
+            if (row[field]) {
+                sessionId = String(row[field]);
+                break;
+            }
+        }
+        
+        // 主讲老师筛选
+        if (teacherNameFilter !== 'all' && sessionId) {
+            const teacherInfo = teacherMapping[sessionId];
+            if (!teacherInfo) {
+                return false;
+            }
+            const teacherName = extractTeacherName(teacherInfo);
+            if (teacherName !== teacherNameFilter) {
+                return false;
+            }
+        }
+        
+        // 产品线筛选
+        if (productLineSearchText && sessionId) {
+            const teacherInfo = teacherMapping[sessionId];
+            if (!teacherInfo) {
+                return false;
+            }
+            const fullInfo = extractTeacherFullInfo(teacherInfo);
+            if (!fullInfo.productLine || !fullInfo.productLine.toLowerCase().includes(productLineSearchText)) {
+                return false;
+            }
+        }
+        
+        // 年级筛选
+        if (gradeFilter !== 'all' && sessionId) {
+            const teacherInfo = teacherMapping[sessionId];
+            if (!teacherInfo) {
+                return false;
+            }
+            const fullInfo = extractTeacherFullInfo(teacherInfo);
+            if (fullInfo.grade !== gradeFilter) {
+                return false;
+            }
+        }
+        
+        // 学科筛选
+        if (subjectFilter !== 'all' && sessionId) {
+            const teacherInfo = teacherMapping[sessionId];
+            if (!teacherInfo) {
+                return false;
+            }
+            const fullInfo = extractTeacherFullInfo(teacherInfo);
+            if (fullInfo.subject !== subjectFilter) {
+                return false;
+            }
+        }
+        
+        // 场次ID搜索筛选
+        if (sessionSearchText && sessionId) {
+            if (!sessionId.toLowerCase().includes(sessionSearchText)) {
+                return false;
             }
         }
         
@@ -1585,10 +1823,29 @@ function displayComments() {
         const comment = filteredComments[i];
         const scoreInfo = getScoreColor(comment.stu_score);
         
-        // 创建评价卡片
-        const commentCard = document.createElement('div');
-        commentCard.className = 'comment-card';
-        commentCard.style.borderLeftColor = scoreInfo.color;
+        // 获取场次ID（支持多种字段名）
+        let sessionId = '';
+        for (const field of fieldMapping.sessionIdFields) {
+            if (comment[field]) {
+                sessionId = String(comment[field]);
+                break;
+            }
+        }
+        
+        // 获取主讲老师信息
+        let teacherName = '未知';
+        let grade = '';
+        let subject = '';
+        let productLine = '';
+        
+        if (sessionId && teacherMapping[sessionId]) {
+            const teacherInfo = teacherMapping[sessionId];
+            const fullInfo = extractTeacherFullInfo(teacherInfo);
+            teacherName = fullInfo.name;
+            grade = fullInfo.grade;
+            subject = fullInfo.subject;
+            productLine = fullInfo.productLine;
+        }
         
         // 获取设备品牌
         const deviceBrand = comment.devices ? getDeviceBrand(comment.devices) : '未知';
@@ -1597,6 +1854,21 @@ function displayComments() {
         // 从JSON中提取placeholder
         const placeholder = extractPlaceholder(comment.stu_content);
         
+        // 创建评价卡片
+        const commentCard = document.createElement('div');
+        commentCard.className = 'comment-card';
+        commentCard.style.borderLeftColor = scoreInfo.color;
+        
+        // 生成标签HTML
+        const tagsHtml = `
+            <div class="comment-tags">
+                <span class="comment-tag teacher-tag">${teacherName}</span>
+                ${grade ? `<span class="comment-tag grade-tag">${grade}</span>` : ''}
+                ${subject ? `<span class="comment-tag subject-tag">${subject}</span>` : ''}
+                ${productLine ? `<span class="comment-tag product-tag">${productLine}</span>` : ''}
+            </div>
+        `;
+        
         // 设置评价卡片内容
         commentCard.innerHTML = `
             <div class="comment-header">
@@ -1604,13 +1876,14 @@ function displayComments() {
                     <span class="comment-score" style="color: ${scoreInfo.color};">${comment.stu_score}分 (${scoreInfo.text})</span>
                     <span>评价ID: ${comment.evaluation_id || '-'}</span>
                     <span>学生ID: ${comment.stu_id || '-'}</span>
-                    <span>版本: ${comment.app_version_number || '-'}</span>
+                    <span>场次ID: ${sessionId || '-'}</span>
                 </div>
+                ${tagsHtml}
             </div>
             <div class="comment-content">${placeholder}</div>
             <div class="comment-meta">
                 <span>评价时间: ${comment.created_at ? new Date(comment.created_at).toLocaleString() : '-'}</span>
-                <span>设备: ${deviceInfo}</span>
+                <span>设备: ${deviceInfo} | 版本: ${comment.app_version_number || '-'}</span>
             </div>
         `;
         
@@ -2323,6 +2596,9 @@ function generateTeacherAnalysis(data) {
     // 填充筛选下拉框
     populateTeacherFilters(teacherNames, teacherStats);
     
+    // 同时填充学员评价内容模块的筛选控件
+    populateCommentsFilters(teacherNames, teacherStats);
+    
     teacherStatsBody.innerHTML = html;
 }
 
@@ -2692,4 +2968,133 @@ function toggleSideNavigation(show) {
         sideNav.classList.add('hidden');
         body.classList.remove('nav-active');
     }
+}
+
+// 导出学员评价内容为Excel
+function exportCommentsToExcel() {
+    if (!filteredComments || filteredComments.length === 0) {
+        alert('没有可导出的数据，请先筛选出评价内容');
+        return;
+    }
+    
+    try {
+        // 准备导出数据
+        const exportData = filteredComments.map(row => {
+            // 获取场次ID（支持多种字段名）
+            let sessionId = '';
+            for (const field of fieldMapping.sessionIdFields) {
+                if (row[field]) {
+                    sessionId = String(row[field]);
+                    break;
+                }
+            }
+            
+            // 提取评价内容
+            const content = extractPlaceholder(row.stu_content) || '';
+            
+            // 格式化评价时间
+            let evaluationTime = '';
+            if (row.created_at) {
+                try {
+                    evaluationTime = new Date(row.created_at).toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                } catch (e) {
+                    evaluationTime = row.created_at;
+                }
+            }
+            
+            return {
+                '场次ID': sessionId,
+                '学生ID': row.stu_id || '',
+                '评分': row.stu_score || '',
+                '评价内容': content,
+                '评价时间': evaluationTime
+            };
+        });
+        
+        // 创建工作簿
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        
+        // 设置列宽
+        const colWidths = [
+            { wch: 15 }, // 场次ID
+            { wch: 15 }, // 学生ID
+            { wch: 8 },  // 评分
+            { wch: 50 }, // 评价内容
+            { wch: 20 }  // 评价时间
+        ];
+        ws['!cols'] = colWidths;
+        
+        // 添加工作表到工作簿
+        XLSX.utils.book_append_sheet(wb, ws, '学员评价内容');
+        
+        // 生成文件名（包含当前时间）
+        const now = new Date();
+        const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_');
+        const filename = `学员评价内容_${timestamp}.xlsx`;
+        
+        // 导出文件
+        XLSX.writeFile(wb, filename);
+        
+        // 显示成功消息
+        alert(`成功导出 ${exportData.length} 条评价内容到文件：${filename}`);
+        
+    } catch (error) {
+        console.error('导出Excel时发生错误:', error);
+        alert('导出失败，请检查浏览器是否支持文件下载功能');
+    }
+}
+
+// 重置主讲老师筛选条件
+function resetTeacherFilters() {
+    // 重置所有筛选控件到默认值
+    if (teacherNameFilter) teacherNameFilter.value = 'all';
+    if (teacherProductLineSearch) {
+        teacherProductLineSearch.value = '';
+        updateClearButtonVisibility(teacherProductLineSearch, clearProductLineBtn);
+    }
+    if (teacherGradeFilter) teacherGradeFilter.value = 'all';
+    if (teacherSubjectFilter) teacherSubjectFilter.value = 'all';
+    if (teacherSessionSearch) {
+        teacherSessionSearch.value = '';
+        updateClearButtonVisibility(teacherSessionSearch, clearSessionBtn);
+    }
+    if (teacherSortField) teacherSortField.value = 'fiveStarRate';
+    if (teacherSortOrder) teacherSortOrder.value = 'desc';
+    
+    // 重新应用筛选（显示所有数据）
+    applyTeacherFilters();
+}
+
+// 重置学生评价内容筛选条件
+function resetCommentsFilters() {
+    // 重置所有筛选控件到默认值
+    if (commentsTeacherNameFilter) commentsTeacherNameFilter.value = 'all';
+    if (commentsProductLineSearch) {
+        commentsProductLineSearch.value = '';
+        updateClearButtonVisibility(commentsProductLineSearch, commentsClearProductLineBtn);
+    }
+    if (commentsGradeFilter) commentsGradeFilter.value = 'all';
+    if (commentsSubjectFilter) commentsSubjectFilter.value = 'all';
+    if (commentsSessionSearch) {
+        commentsSessionSearch.value = '';
+        updateClearButtonVisibility(commentsSessionSearch, commentsClearSessionBtn);
+    }
+    if (commentsScoreFilterElement) commentsScoreFilterElement.value = 'all';
+    if (commentsLabelFilterElement) commentsLabelFilterElement.value = 'all';
+    
+    // 重置标签筛选下拉框（因为评分筛选重置后需要显示所有标签）
+    updateLabelFilterByScore('all', commentsLabelFilterElement);
+    
+    // 重新应用筛选（显示所有数据）
+    applyCommentsFilters();
+    commentsCurrentPage = 1;
+    displayComments();
 }
